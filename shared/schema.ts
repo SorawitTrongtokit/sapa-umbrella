@@ -71,6 +71,18 @@ export const adminLoginSchema = z.object({
 
 export type AdminLogin = z.infer<typeof adminLoginSchema>;
 
+// Activity schema
+export const activitySchema = z.object({
+  type: z.enum(['borrow', 'return', 'admin_update']),
+  umbrellaId: z.number().min(1).max(21),
+  nickname: z.string().optional(),
+  location: z.enum([LOCATIONS.DOME, LOCATIONS.SPORTS, LOCATIONS.CAFETERIA]),
+  timestamp: z.number(),
+  note: z.string().optional()
+});
+
+export type Activity = z.infer<typeof activitySchema>;
+
 // Helper functions
 export function getLocationForUmbrella(umbrellaId: number): Location {
   if (umbrellaId >= 1 && umbrellaId <= 7) return LOCATIONS.DOME;

@@ -213,25 +213,27 @@ export default function BorrowForm() {
                 <AlertTriangle className="w-5 h-5 text-orange-500" />
                 ยืนยันการยืมร่ม
               </AlertDialogTitle>
-              <AlertDialogDescription className="text-left space-y-3">
-                <div className="bg-blue-50 p-3 rounded-lg">
-                  <h4 className="font-medium text-blue-900 mb-2">รายละเอียดการยืม:</h4>
-                  <ul className="text-sm text-blue-800 space-y-1">
-                    <li>• ชื่อเล่น: <strong>{formData?.nickname}</strong></li>
-                    <li>• ร่มหมายเลข: <strong>#{formData?.umbrellaId}</strong></li>
-                    <li>• ยืมจาก: <strong>{formData?.location}</strong></li>
-                  </ul>
-                </div>
-                
-                <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-orange-900">ข้อกำหนดสำคัญ:</p>
-                      <p className="text-sm text-orange-800 mt-1">
-                        <strong>ยืมจากที่ไหน ต้องคืนที่นั่น</strong><br/>
-                        กรุณาคืนร่มที่ <strong>{formData?.location}</strong> เท่านั้น
-                      </p>
+              <AlertDialogDescription asChild>
+                <div className="text-left space-y-3">
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <h4 className="font-medium text-blue-900 mb-2">รายละเอียดการยืม:</h4>
+                    <div className="text-sm text-blue-800 space-y-1">
+                      <div>• ชื่อเล่น: <strong>{formData?.nickname}</strong></div>
+                      <div>• ร่มหมายเลข: <strong>#{formData?.umbrellaId}</strong></div>
+                      <div>• ยืมจาก: <strong>{formData?.location}</strong></div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <div className="font-medium text-orange-900">ข้อกำหนดสำคัญ:</div>
+                        <div className="text-sm text-orange-800 mt-1">
+                          <strong>ยืมจากที่ไหน ต้องคืนที่นั่น</strong><br/>
+                          กรุณาคืนร่มที่ <strong>{formData?.location}</strong> เท่านั้น
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

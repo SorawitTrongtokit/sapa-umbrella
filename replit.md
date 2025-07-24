@@ -11,6 +11,9 @@ This is a real-time umbrella borrowing and returning system designed for a schoo
 ✓ **Improved UI**: Added detailed umbrella info display in return form showing borrower and timestamp
 ✓ **Form Validation**: Updated schema to make return location optional as it's auto-set
 ✓ **Firebase Integration**: Fully configured with environment variables for seamless data sync
+✓ **Admin Dashboard Enhancement**: Added umbrella data editing capabilities with full CRUD operations
+✓ **Usage Logs Feature**: Implemented comprehensive activity logging with timeline view for each umbrella
+✓ **Admin Management Tools**: Added Edit, View Logs, and Force Return buttons for complete umbrella management
 
 ## User Preferences
 
