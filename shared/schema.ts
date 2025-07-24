@@ -58,7 +58,7 @@ export type BorrowForm = z.infer<typeof borrowFormSchema>;
 // Return form schema
 export const returnFormSchema = z.object({
   umbrellaId: z.number().min(1).max(21),
-  returnLocation: z.enum([LOCATIONS.DOME, LOCATIONS.SPORTS, LOCATIONS.CAFETERIA])
+  returnLocation: z.enum([LOCATIONS.DOME, LOCATIONS.SPORTS, LOCATIONS.CAFETERIA]).optional()
 });
 
 export type ReturnForm = z.infer<typeof returnFormSchema>;

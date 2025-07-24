@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Umbrella as UmbrellaIcon } from 'lucide-react';
+import { Umbrella as UmbrellaIcon, AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { borrowFormSchema, type BorrowForm, LOCATIONS } from '@shared/schema';
 import { useUmbrellaData } from '@/hooks/use-umbrella-data';
@@ -17,6 +18,8 @@ export default function BorrowForm() {
   const { toast } = useToast();
   const { getAvailableUmbrellas } = useUmbrellaData();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [formData, setFormData] = useState<BorrowForm | null>(null);
 
   const form = useForm<BorrowForm>({
     resolver: zodResolver(borrowFormSchema),
@@ -31,19 +34,28 @@ export default function BorrowForm() {
   const availableUmbrellas = getAvailableUmbrellas();
 
   const onSubmit = async (data: BorrowForm) => {
+    // Show confirmation dialog instead of directly submitting
+    setFormData(data);
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmBorrow = async () => {
+    if (!formData) return;
+    
     setIsSubmitting(true);
+    setShowConfirmDialog(false);
     
     try {
       const timestamp = Date.now();
       
       // Update umbrella status
-      await updateUmbrella(data.umbrellaId, {
-        id: data.umbrellaId,
+      await updateUmbrella(formData.umbrellaId, {
+        id: formData.umbrellaId,
         status: 'borrowed',
-        currentLocation: data.location,
+        currentLocation: formData.location,
         borrower: {
-          nickname: data.nickname,
-          phone: data.phone,
+          nickname: formData.nickname,
+          phone: formData.phone,
           timestamp
         },
         history: [] // Will be updated by Firebase triggers if needed
@@ -52,19 +64,20 @@ export default function BorrowForm() {
       // Add activity log
       await addActivity({
         type: 'borrow',
-        umbrellaId: data.umbrellaId,
-        nickname: data.nickname,
-        location: data.location,
+        umbrellaId: formData.umbrellaId,
+        nickname: formData.nickname,
+        location: formData.location,
         timestamp
       });
 
       toast({
         title: "ยืมร่มเรียบร้อย",
-        description: `ร่ม #${data.umbrellaId} ได้ถูกยืมแล้ว`,
+        description: `ร่ม #${formData.umbrellaId} ได้ถูกยืมแล้ว`,
         variant: "default"
       });
 
       form.reset();
+      setFormData(null);
     } catch (error) {
       toast({
         title: "เกิดข้อผิดพลาด",
@@ -191,6 +204,57 @@ export default function BorrowForm() {
             </Form>
           </CardContent>
         </Card>
+
+        {/* Confirmation Dialog */}
+        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <AlertDialogContent className="max-w-md mx-auto">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-orange-500" />
+                ยืนยันการยืมร่ม
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-left space-y-3">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <h4 className="font-medium text-blue-900 mb-2">รายละเอียดการยืม:</h4>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• ชื่อเล่น: <strong>{formData?.nickname}</strong></li>
+                    <li>• ร่มหมายเลข: <strong>#{formData?.umbrellaId}</strong></li>
+                    <li>• ยืมจาก: <strong>{formData?.location}</strong></li>
+                  </ul>
+                </div>
+                
+                <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-orange-900">ข้อกำหนดสำคัญ:</p>
+                      <p className="text-sm text-orange-800 mt-1">
+                        <strong>ยืมจากที่ไหน ต้องคืนที่นั่น</strong><br/>
+                        กรุณาคืนร่มที่ <strong>{formData?.location}</strong> เท่านั้น
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel 
+                onClick={() => setShowConfirmDialog(false)}
+                disabled={isSubmitting}
+              >
+                ยกเลิก
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleConfirmBorrow}
+                disabled={isSubmitting}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <UmbrellaIcon className="w-4 h-4 mr-2" />
+                {isSubmitting ? 'กำลังยืม...' : 'ยืนยันการยืม'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

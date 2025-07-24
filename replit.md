@@ -4,6 +4,14 @@
 
 This is a real-time umbrella borrowing and returning system designed for a school environment. The application allows students to borrow and return umbrellas from three campus locations, with real-time status tracking and an admin dashboard for management. The system tracks 21 umbrellas distributed across three fixed locations: ใต้โดม (umbrellas 1-7), ศูนย์กีฬา (umbrellas 8-14), and โรงอาหาร (umbrellas 15-21).
 
+## Recent Changes (January 2025)
+
+✓ **Enhanced User Experience**: Added confirmation popup for borrowing with clear "return to same location" reminder
+✓ **Smart Return System**: Auto-displays return location when umbrella is selected - no manual selection needed
+✓ **Improved UI**: Added detailed umbrella info display in return form showing borrower and timestamp
+✓ **Form Validation**: Updated schema to make return location optional as it's auto-set
+✓ **Firebase Integration**: Fully configured with environment variables for seamless data sync
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
