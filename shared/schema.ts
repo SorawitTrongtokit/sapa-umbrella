@@ -49,11 +49,12 @@ export type Umbrella = z.infer<typeof umbrellaSchema>;
 export const borrowFormSchema = z.object({
   nickname: z.string().min(1, "กรุณากรอกชื่อเล่น"),
   phone: z.string().regex(/^[0-9]{10}$/, "กรุณากรอกเบอร์โทร 10 หลัก"),
-  umbrellaId: z.number().min(1).max(21),
-  location: z.enum([LOCATIONS.DOME, LOCATIONS.SPORTS, LOCATIONS.CAFETERIA])
+  umbrellaId: z.number().min(1).max(21)
 });
 
-export type BorrowForm = z.infer<typeof borrowFormSchema>;
+export type BorrowForm = z.infer<typeof borrowFormSchema> & {
+  location?: Location; // Added during form processing
+};
 
 // Return form schema
 export const returnFormSchema = z.object({

@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LogOut, Umbrella, Check, User, TrendingUp, RotateCcw, Edit, History, MapPin, Calendar, X } from 'lucide-react';
+import { LogOut, Umbrella, Check, User, TrendingUp, RotateCcw, Edit, History, MapPin, Calendar, X, BarChart3, RefreshCw, AlertCircle, Clock, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,9 @@ export default function AdminDashboard() {
   const [editingUmbrella, setEditingUmbrella] = useState<any>(null);
   const [viewingLogs, setViewingLogs] = useState<number | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showStats, setShowStats] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const form = useForm<AdminLogin>({
     resolver: zodResolver(adminLoginSchema),
@@ -177,6 +180,28 @@ export default function AdminDashboard() {
       .sort((a, b) => b.timestamp - a.timestamp);
   };
 
+  const filteredUmbrellas = Object.values(umbrellas).filter(umbrella => 
+    umbrella.id.toString().includes(searchTerm) ||
+    umbrella.currentLocation.includes(searchTerm) ||
+    (umbrella.borrower?.nickname || '').includes(searchTerm)
+  );
+
+  const todayReturns = activities.filter(activity => {
+    const today = new Date();
+    const activityDate = new Date(activity.timestamp);
+    return activity.type === 'return' && 
+           activityDate.toDateString() === today.toDateString();
+  }).length;
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    setTimeout(() => setIsRefreshing(false), 1000);
+  };
+
+  useEffect(() => {
+    setShowStats(true);
+  }, []);
+
   const todayBorrows = activities.filter(activity => {
     const today = new Date();
     const activityDate = new Date(activity.timestamp);
@@ -272,9 +297,41 @@ export default function AdminDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Quick Actions */}
+        <div className="mb-6 flex flex-wrap gap-4">
+          <div className="flex-1 min-w-64">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="ค้นหาหมายเลขร่ม, ตำแหน่ง, หรือชื่อผู้ยืม..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-12"
+              />
+            </div>
+          </div>
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            className="h-12 px-6"
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            รีเฟรช
+          </Button>
+          <Button
+            onClick={() => setShowStats(!showStats)}
+            variant="outline"
+            className="h-12 px-6"
+          >
+            <BarChart3 className="w-4 h-4 mr-2" />
+            สถิติ
+          </Button>
+        </div>
+
         {/* Analytics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
+        <div className={`grid grid-cols-2 md:grid-cols-5 gap-6 mb-8 transition-all duration-500 ${showStats ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform -translate-y-4'}`}>
+          <Card className="hover:shadow-md transition-shadow duration-200">
             <CardContent className="p-6">
               <div className="flex items-center">
                 <div className="bg-blue-100 p-3 rounded-lg">
@@ -288,7 +345,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="hover:shadow-md transition-shadow duration-200">
             <CardContent className="p-6">
               <div className="flex items-center">
                 <div className="bg-green-100 p-3 rounded-lg">
@@ -302,7 +359,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="hover:shadow-md transition-shadow duration-200">
             <CardContent className="p-6">
               <div className="flex items-center">
                 <div className="bg-orange-100 p-3 rounded-lg">
@@ -316,7 +373,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="hover:shadow-md transition-shadow duration-200">
             <CardContent className="p-6">
               <div className="flex items-center">
                 <div className="bg-blue-100 p-3 rounded-lg">
@@ -329,12 +386,31 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="hover:shadow-md transition-shadow duration-200">
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="bg-purple-100 p-3 rounded-lg">
+                  <RotateCcw className="text-purple-600 w-6 h-6" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-gray-600">คืนวันนี้</p>
+                  <p className="text-2xl font-bold text-gray-900">{todayReturns}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Umbrella Management Table */}
-        <Card>
+        <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle>จัดการร่ม</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+              จัดการร่ม
+              <Badge variant="secondary" className="ml-2">
+                แสดง {filteredUmbrellas.length} จาก 21 ร่ม
+              </Badge>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -359,23 +435,36 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {Object.values(umbrellas).map((umbrella) => (
-                    <tr key={umbrella.id}>
+                  {filteredUmbrellas.map((umbrella, index) => (
+                    <tr 
+                      key={umbrella.id} 
+                      className={`hover:bg-gray-50 transition-colors duration-150 ${
+                        index % 2 === 0 ? 'bg-white' : 'bg-gray-25'
+                      }`}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        #{umbrella.id}
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                            <span className="text-blue-800 font-bold text-xs">#{umbrella.id}</span>
+                          </div>
+                          ร่ม #{umbrella.id}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Badge 
                           variant={umbrella.status === 'available' ? 'default' : 'secondary'}
-                          className={umbrella.status === 'available' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-orange-100 text-orange-800'}
+                          className={`animate-pulse-slow ${umbrella.status === 'available' 
+                            ? 'bg-green-100 text-green-800 border-green-200' 
+                            : 'bg-orange-100 text-orange-800 border-orange-200'}`}
                         >
-                          {umbrella.status === 'available' ? 'ว่าง' : 'ยืม'}
+                          {umbrella.status === 'available' ? '✅ ว่าง' : '🔄 ยืม'}
                         </Badge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {umbrella.currentLocation}
+                        <div className="flex items-center">
+                          <MapPin className="w-4 h-4 text-gray-400 mr-1" />
+                          {umbrella.currentLocation}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {umbrella.borrower ? (

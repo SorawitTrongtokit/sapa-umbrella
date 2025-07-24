@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { borrowFormSchema, type BorrowForm, LOCATIONS } from '@shared/schema';
+import { borrowFormSchema, type BorrowForm, LOCATIONS, getLocationForUmbrella } from '@shared/schema';
 import { useUmbrellaData } from '@/hooks/use-umbrella-data';
 import { updateUmbrella, addActivity } from '@/lib/firebase';
 
@@ -26,16 +26,17 @@ export default function BorrowForm() {
     defaultValues: {
       nickname: '',
       phone: '',
-      umbrellaId: 0,
-      location: undefined
+      umbrellaId: 0
     }
   });
 
   const availableUmbrellas = getAvailableUmbrellas();
 
   const onSubmit = async (data: BorrowForm) => {
-    // Show confirmation dialog instead of directly submitting
-    setFormData(data);
+    // Auto-set location based on umbrella ID
+    const location = getLocationForUmbrella(data.umbrellaId);
+    const formDataWithLocation = { ...data, location };
+    setFormData(formDataWithLocation);
     setShowConfirmDialog(true);
   };
 
@@ -157,40 +158,20 @@ export default function BorrowForm() {
                         <SelectContent>
                           {availableUmbrellas.map((umbrella) => (
                             <SelectItem key={umbrella.id} value={umbrella.id.toString()}>
-                              ร่ม #{umbrella.id} ({umbrella.currentLocation})
+                              ร่ม #{umbrella.id} - {umbrella.currentLocation}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      <div className="text-xs text-gray-500 mt-1">
+                        💡 เมื่อเลือกร่มแล้ว ตำแหน่งจะถูกกำหนดอัตโนมัติ
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="location"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ตำแหน่งที่ยืม <span className="text-red-500">*</span></FormLabel>
-                      <Select onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger className="h-12">
-                            <SelectValue placeholder="เลือกตำแหน่ง" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Object.values(LOCATIONS).map((location) => (
-                            <SelectItem key={location} value={location}>
-                              {location}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+{/* Location is now auto-determined by umbrella ID */}
 
                 <Button 
                   type="submit" 
@@ -220,7 +201,7 @@ export default function BorrowForm() {
                     <div className="text-sm text-blue-800 space-y-1">
                       <div>• ชื่อเล่น: <strong>{formData?.nickname}</strong></div>
                       <div>• ร่มหมายเลข: <strong>#{formData?.umbrellaId}</strong></div>
-                      <div>• ยืมจาก: <strong>{formData?.location}</strong></div>
+                      <div>• ยืมจาก: <strong>{formData && getLocationForUmbrella(formData.umbrellaId)}</strong></div>
                     </div>
                   </div>
                   
@@ -231,7 +212,7 @@ export default function BorrowForm() {
                         <div className="font-medium text-orange-900">ข้อกำหนดสำคัญ:</div>
                         <div className="text-sm text-orange-800 mt-1">
                           <strong>ยืมจากที่ไหน ต้องคืนที่นั่น</strong><br/>
-                          กรุณาคืนร่มที่ <strong>{formData?.location}</strong> เท่านั้น
+                          กรุณาคืนร่มที่ <strong>{formData && getLocationForUmbrella(formData.umbrellaId)}</strong> เท่านั้น
                         </div>
                       </div>
                     </div>
