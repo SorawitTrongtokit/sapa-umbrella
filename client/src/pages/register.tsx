@@ -33,6 +33,12 @@ export default function RegisterPage() {
       setLoading(true);
       setError(null);
       
+      // Check for blocked weak password
+      if (data.password.toLowerCase() === 'pccpl123') {
+        setError('รหัสผ่านนี้ไม่ปลอดภัย กรุณาใช้รหัสผ่านอื่นที่แข็งแกร่งกว่า');
+        return;
+      }
+      
       await userRegister(data);
       
       // Show success message and redirect
@@ -66,7 +72,7 @@ export default function RegisterPage() {
             สมัครสมาชิก
           </CardTitle>
           <CardDescription className="text-gray-600">
-            ระบบยืม-คืนร่ม โรงเรียนสราสาสน์ประเทศไทย
+            ระบบยืม-คืนร่ม PCSHSPL
           </CardDescription>
         </CardHeader>
         
@@ -153,7 +159,7 @@ export default function RegisterPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="example@student.sst.ac.th"
+                placeholder="example@pccpl.ac.th"
                 {...register('email')}
                 disabled={loading}
               />

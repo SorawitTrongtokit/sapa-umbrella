@@ -17,11 +17,13 @@ export const useUserAuth = (): UseUserAuthReturn => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+      console.log('Auth state changed:', authUser?.email || 'No user');
       setUser(authUser);
       
       if (authUser) {
         try {
           const profile = await getUserProfile(authUser.uid);
+          console.log('User profile loaded:', profile?.firstName);
           setUserProfile(profile);
         } catch (error) {
           console.error('Error fetching user profile:', error);
@@ -37,10 +39,13 @@ export const useUserAuth = (): UseUserAuthReturn => {
     return () => unsubscribe();
   }, []);
 
+  // Consider user authenticated if they have Firebase auth (even without profile for faster UX)
+  const isAuthenticated = !!user;
+
   return {
     user,
     userProfile,
     loading,
-    isAuthenticated: !!user && !!userProfile
+    isAuthenticated
   };
 };

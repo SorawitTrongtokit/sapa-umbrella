@@ -1,5 +1,22 @@
 {
   "rules": {
+    "users": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || root.child('users').child(auth.uid).child('role').val() == 'owner' || root.child('users').child(auth.uid).child('role').val() == 'admin')",
+        ".write": "auth != null && (auth.uid == $uid || root.child('users').child(auth.uid).child('role').val() == 'owner')",
+        "role": {
+          ".write": "auth != null && (auth.uid == $uid || root.child('users').child(auth.uid).child('role').val() == 'owner')",
+          ".validate": "newData.val() == 'user' || newData.val() == 'admin' || newData.val() == 'owner'"
+        },
+        "updatedAt": {
+          ".write": "auth != null && (auth.uid == $uid || root.child('users').child(auth.uid).child('role').val() == 'owner')",
+          ".validate": "newData.val() > 0"
+        },
+        ".validate": "(auth.uid == $uid && newData.hasChildren(['uid', 'firstName', 'lastName', 'grade', 'studentNumber', 'phone', 'email', 'role', 'createdAt', 'updatedAt'])) || (root.child('users').child(auth.uid).child('role').val() == 'owner' && newData.child('firstName').exists() && newData.child('lastName').exists() && newData.child('grade').exists() && newData.child('studentNumber').exists() && newData.child('phone').exists() && newData.child('email').exists() && newData.child('role').exists() && newData.child('updatedAt').exists()) && newData.child('firstName').val().length >= 1 && newData.child('lastName').val().length >= 1 && newData.child('grade').val().length >= 1 && newData.child('studentNumber').val().length >= 1 && newData.child('phone').val().matches(/^[0-9]{10}$/) && newData.child('email').val().matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/) && (newData.child('role').val() == 'user' || newData.child('role').val() == 'admin' || newData.child('role').val() == 'owner') && newData.child('updatedAt').val() > 0"
+      }
+    },
     "umbrellas": {
       ".read": true,
       ".write": "auth != null",

@@ -1,7 +1,7 @@
 /**
  * PCSHSPL Umbrella Borrowing System
  * 
- * Developed by: Sorawit
+ * Developed by: Sorawit Trongtokit
  * School: Princess Chulabhorn Science High School Phitsanulok (PCSHSPL)
  * 
  * A real-time umbrella management system built with React, Firebase, and PWA technologies.
@@ -17,6 +17,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { NetworkStatus } from "@/components/network-status";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { ProtectedRoute } from "@/components/protected-route";
+import { AdminProtectedRoute } from "@/components/admin-protected-route";
 import UmbrellaStatus from "@/pages/umbrella-status";
 import BorrowForm from "@/pages/borrow-form";
 import ReturnForm from "@/pages/return-form";
@@ -50,7 +51,11 @@ function Router() {
             <ReturnForm />
           </ProtectedRoute>
         </Route>
-        <Route path="/admin" component={AdminDashboard} />
+        <Route path="/admin">
+          <AdminProtectedRoute>
+            <AdminDashboard />
+          </AdminProtectedRoute>
+        </Route>
         <Route component={NotFound} />
       </Switch>
       
@@ -73,8 +78,8 @@ function Router() {
 
 function App() {
   useEffect(() => {
-    // Register Service Worker for PWA
-    if ('serviceWorker' in navigator) {
+    // Register Service Worker for PWA (only in production)
+    if ('serviceWorker' in navigator && import.meta.env.PROD) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
           .then((registration) => {

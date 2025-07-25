@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Icon</title>
+</head>
+<body>
+    <canvas id="canvas" width="192" height="192"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Blue background
+        ctx.fillStyle = '#2563eb';
+        ctx.fillRect(0, 0, 192, 192);
+        
+        // White umbrella shape
+        ctx.fillStyle = 'white';
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 4;
+        
+        // Umbrella top arc
+        ctx.beginPath();
+        ctx.arc(96, 80, 50, 0, Math.PI);
+        ctx.fill();
+        
+        // Umbrella handle
+        ctx.fillRect(93, 80, 6, 80);
+        
+        // Umbrella hook
+        ctx.beginPath();
+        ctx.arc(105, 155, 12, 0, Math.PI);
+        ctx.stroke();
+        
+        // Convert to PNG and download
+        canvas.toBlob(function(blob) {
+            const link = document.createElement('a');
+            link.download = 'icon-192.png';
+            link.href = URL.createObjectURL(blob);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }, 'image/png');
+        
+        // Create 512px version
+        setTimeout(() => {
+            const canvas512 = document.createElement('canvas');
+            canvas512.width = 512;
+            canvas512.height = 512;
+            const ctx512 = canvas512.getContext('2d');
+            
+            ctx512.drawImage(canvas, 0, 0, 192, 192, 0, 0, 512, 512);
+            
+            canvas512.toBlob(function(blob) {
+                const link = document.createElement('a');
+                link.download = 'icon-512.png';
+                link.href = URL.createObjectURL(blob);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }, 'image/png');
+        }, 1000);
+    </script>
+    <p>PNG files will be downloaded automatically...</p>
+</body>
+</html>

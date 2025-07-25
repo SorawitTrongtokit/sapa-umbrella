@@ -256,7 +256,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🏫 Credits
 
-**Developed by:** Sorawit  
+**Developed by:** Sorawit Trongtokit  
 **School:** PCSHSPL (Princess Chulabhorn Science High School Phitsanulok)
 
 Built for school umbrella management systems. Designed with mobile-first approach for easy student access and comprehensive admin controls.

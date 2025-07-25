@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Owner Role</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .error { color: red; margin-top: 10px; }
+        .success { color: green; margin-top: 10px; }
+        .step { background: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 4px; }
+    </style>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getDatabase, ref, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCKrI6yFRoRW9QlYQY9VxMe0DxC1yTEusw",
+            authDomain: "umbrella-system-e0ae7.firebaseapp.com",
+            databaseURL: "https://umbrella-system-e0ae7-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "umbrella-system-e0ae7",
+            storageBucket: "umbrella-system-e0ae7.firebasestorage.app",
+            messagingSenderId: "644775621893",
+            appId: "1:644775621893:web:76175ce428a8d99550336c"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+        
+        window.loginAndSetOwner = async function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+            
+            if (!email || !password) {
+                messageDiv.innerHTML = '<div class="error">กรุณากรอกอีเมลและรหัสผ่าน</div>';
+                return;
+            }
+            
+            try {
+                messageDiv.innerHTML = 'กำลังเข้าสู่ระบบ...';
+                
+                // Login first
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                messageDiv.innerHTML = 'เข้าสู่ระบบสำเร็จ กำลังตั้งค่า Owner role...';
+                
+                // Get current user data first
+                const userRef = ref(database, `users/${user.uid}`);
+                const { get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                
+                const snapshot = await get(userRef);
+                if (snapshot.exists()) {
+                    // Update only role and updatedAt while keeping existing data
+                    const currentData = snapshot.val();
+                    const updatedData = {
+                        ...currentData,
+                        role: 'owner',
+                        updatedAt: Date.now()
+                    };
+                    
+                    const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                    await set(userRef, updatedData);
+                    
+                    messageDiv.innerHTML = `
+                        <div class="success">
+                            <h3>✅ ตั้งค่า Owner role สำเร็จ!</h3>
+                            <p><strong>UID:</strong> ${user.uid}</p>
+                            <p><strong>อีเมล:</strong> ${user.email}</p>
+                            <p>ตอนนี้คุณสามารถเข้าถึง Owner Dashboard ได้แล้ว</p>
+                            <p><a href="/" style="color: #007bff;">กลับไปยังระบบหลัก</a></p>
+                        </div>
+                    `;
+                } else {
+                    messageDiv.innerHTML = '<div class="error">ไม่พบข้อมูลผู้ใช้ในระบบ กรุณาสมัครสมาชิกก่อน</div>';
+                }
+                
+                // Clear form
+                document.getElementById('email').value = '';
+                document.getElementById('password').value = '';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                let errorMessage = 'เกิดข้อผิดพลาด: ' + error.message;
+                
+                if (error.code === 'auth/user-not-found') {
+                    errorMessage = 'ไม่พบบัญชีผู้ใช้นี้';
+                } else if (error.code === 'auth/wrong-password') {
+                    errorMessage = 'รหัสผ่านไม่ถูกต้อง';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'รูปแบบอีเมลไม่ถูกต้อง';
+                }
+                
+                messageDiv.innerHTML = '<div class="error">' + errorMessage + '</div>';
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>🔧 ตั้งค่า Owner Role</h1>
+    
+    <div class="step">
+        <h3>📋 ขั้นตอนการใช้งาน:</h3>
+        <ol>
+            <li>สมัครสมาชิกในระบบก่อน (หากยังไม่ได้สมัคร)</li>
+            <li>กรอกอีเมลและรหัสผ่านของบัญชีที่ต้องการตั้งเป็น Owner</li>
+            <li>กดปุ่ม "ตั้งค่า Owner Role"</li>
+            <li>เมื่อสำเร็จแล้ว ไปที่ /admin เพื่อเข้าถึง Owner Dashboard</li>
+        </ol>
+    </div>
+
+    <form onsubmit="event.preventDefault(); loginAndSetOwner();">
+        <div class="form-group">
+            <label for="email">อีเมล:</label>
+            <input type="email" id="email" placeholder="example@student.sst.ac.th" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">รหัสผ่าน:</label>
+            <input type="password" id="password" placeholder="รหัสผ่านของคุณ" required>
+        </div>
+        
+        <button type="submit">🎯 ตั้งค่า Owner Role</button>
+    </form>
+    
+    <div id="message"></div>
+    
+    <div class="step">
+        <h3>⚠️ คำเตือน:</h3>
+        <ul>
+            <li>Owner มีสิทธิ์สูงสุดในระบบ</li>
+            <li>สามารถจัดการข้อมูลผู้ใช้ทั้งหมดได้</li>
+            <li>กรุณาเก็บข้อมูลการเข้าสู่ระบบให้ปลอดภัย</li>
+            <li>หลังจากตั้งค่าแล้ว ควรลบไฟล์นี้ออก</li>
+        </ul>
+    </div>
+    
+    <hr>
+    <p><small>
+        หลังจากตั้งค่า Owner เรียบร้อยแล้ว สามารถลบไฟล์นี้ได้โดยการลบ 
+        <code>client/public/set-owner.html</code>
+    </small></p>
+</body>
+</html>

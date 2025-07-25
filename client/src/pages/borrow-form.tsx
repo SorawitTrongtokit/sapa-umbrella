@@ -1,17 +1,10 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Umbrella as UmbrellaIcon, AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useUserAuth } from '@/hooks/use-user-auth';
-import { borrowFormSchema, type BorrowForm, LOCATIONS, getLocationForUmbrella } from '@shared/schema';
+import { getLocationForUmbrella } from '@shared/schema';
 import { useUmbrellaData } from '@/hooks/use-umbrella-data';
 import { updateUmbrella, addActivity } from '@/lib/firebase';
 
@@ -21,66 +14,65 @@ export default function BorrowForm() {
   const { getAvailableUmbrellas } = useUmbrellaData();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [formData, setFormData] = useState<BorrowForm | null>(null);
-
-  const form = useForm<BorrowForm>({
-    resolver: zodResolver(borrowFormSchema),
-    defaultValues: {
-      nickname: userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : '',
-      phone: userProfile?.phone || '',
-      umbrellaId: 0
-    }
-  });
+  const [selectedUmbrellaId, setSelectedUmbrellaId] = useState<number | null>(null);
 
   const availableUmbrellas = getAvailableUmbrellas();
 
-  const onSubmit = async (data: BorrowForm) => {
-    // Auto-set location based on umbrella ID
-    const location = getLocationForUmbrella(data.umbrellaId);
-    const formDataWithLocation = { ...data, location };
-    setFormData(formDataWithLocation);
+  const handleUmbrellaSelect = (umbrellaId: number) => {
+    setSelectedUmbrellaId(umbrellaId);
     setShowConfirmDialog(true);
   };
 
   const handleConfirmBorrow = async () => {
-    if (!formData) return;
+    if (!selectedUmbrellaId || !userProfile) return;
     
     setIsSubmitting(true);
     setShowConfirmDialog(false);
     
     try {
       const timestamp = Date.now();
+      const location = getLocationForUmbrella(selectedUmbrellaId);
+      const borrowerName = `${userProfile.firstName} ${userProfile.lastName}`;
       
       // Update umbrella status
-      await updateUmbrella(formData.umbrellaId, {
-        id: formData.umbrellaId,
+      await updateUmbrella(selectedUmbrellaId, {
+        id: selectedUmbrellaId,
         status: 'borrowed',
-        currentLocation: formData.location,
+        currentLocation: location,
         borrower: {
-          nickname: formData.nickname,
-          phone: formData.phone,
+          nickname: borrowerName,
+          phone: userProfile.phone,
           timestamp
         },
         history: [] // Will be updated by Firebase triggers if needed
       });
 
-      // Add activity log
+      // Add activity log with user profile data
       await addActivity({
         type: 'borrow',
-        umbrellaId: formData.umbrellaId,
-        nickname: formData.nickname,
-        location: formData.location,
-        timestamp
+        umbrellaId: selectedUmbrellaId,
+        nickname: borrowerName,
+        location: location,
+        timestamp,
+        // Add additional user data for better tracking
+        userInfo: {
+          uid: userProfile.uid,
+          email: userProfile.email,
+          firstName: userProfile.firstName,
+          lastName: userProfile.lastName,
+          grade: userProfile.grade,
+          studentNumber: userProfile.studentNumber,
+          phone: userProfile.phone
+        }
       });
 
       toast({
         title: "ยืมร่มเรียบร้อย",
-        description: `ร่ม #${formData.umbrellaId} ได้ถูกยืมแล้ว`,
+        description: `ร่ม #${selectedUmbrellaId} ได้ถูกยืมแล้ว`,
         variant: "default"
       });
 
-      form.reset();
-      setFormData(null);
+      setSelectedUmbrellaId(null);
     } catch (error) {
       toast({
         title: "เกิดข้อผิดพลาด",
@@ -103,88 +95,58 @@ export default function BorrowForm() {
       </div>
 
       <div className="max-w-md mx-auto px-4 py-6">
+        {/* User Info Card */}
+        {userProfile && (
+          <Card className="bg-blue-50 border-blue-200 mb-6">
+            <CardContent className="p-4">
+              <h3 className="font-medium text-blue-900 mb-2">ข้อมูลผู้ยืม</h3>
+              <div className="text-sm text-blue-800 space-y-1">
+                <div>ชื่อ: {userProfile.firstName} {userProfile.lastName}</div>
+                <div>ชั้น: {userProfile.grade} เลขที่: {userProfile.studentNumber}</div>
+                <div>เบอร์โทร: {userProfile.phone}</div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Available Umbrellas */}
         <Card className="bg-white shadow-sm">
           <CardContent className="p-6">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="nickname"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ชื่อเล่น <span className="text-red-500">*</span></FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="กรอกชื่อเล่น" 
-                          {...field}
-                          className="h-12"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>เบอร์โทร <span className="text-red-500">*</span></FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="tel"
-                          placeholder="0123456789"
-                          maxLength={10}
-                          {...field}
-                          className="h-12"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="umbrellaId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>หมายเลขร่ม <span className="text-red-500">*</span></FormLabel>
-                      <Select onValueChange={(value) => field.onChange(parseInt(value))}>
-                        <FormControl>
-                          <SelectTrigger className="h-12">
-                            <SelectValue placeholder="เลือกหมายเลขร่ม" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {availableUmbrellas.map((umbrella) => (
-                            <SelectItem key={umbrella.id} value={umbrella.id.toString()}>
-                              ร่ม #{umbrella.id} - {umbrella.currentLocation}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <div className="text-xs text-gray-500 mt-1">
-                        💡 เมื่อเลือกร่มแล้ว ตำแหน่งจะถูกกำหนดอัตโนมัติ
+            <h3 className="text-lg font-semibold mb-4 text-center">เลือกร่มที่ต้องการยืม</h3>
+            
+            {availableUmbrellas.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">
+                <UmbrellaIcon className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>ไม่มีร่มที่พร้อมให้ยืมในขณะนี้</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {availableUmbrellas.map((umbrella) => (
+                  <Card 
+                    key={umbrella.id} 
+                    className="border-2 border-gray-200 hover:border-blue-400 cursor-pointer transition-colors"
+                    onClick={() => handleUmbrellaSelect(umbrella.id)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <UmbrellaIcon className="w-6 h-6 text-blue-600" />
+                          <div>
+                            <div className="font-medium">ร่ม #{umbrella.id}</div>
+                            <div className="text-sm text-gray-600">{umbrella.currentLocation}</div>
+                          </div>
+                        </div>
+                        <div className="text-sm">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            พร้อมให้ยืม
+                          </span>
+                        </div>
                       </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-{/* Location is now auto-determined by umbrella ID */}
-
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white"
-                  disabled={isSubmitting}
-                >
-                  <UmbrellaIcon className="w-4 h-4 mr-2" />
-                  {isSubmitting ? 'กำลังดำเนินการ...' : 'ยืมร่ม'}
-                </Button>
-              </form>
-            </Form>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -201,9 +163,9 @@ export default function BorrowForm() {
                   <div className="bg-blue-50 p-3 rounded-lg">
                     <h4 className="font-medium text-blue-900 mb-2">รายละเอียดการยืม:</h4>
                     <div className="text-sm text-blue-800 space-y-1">
-                      <div>• ชื่อเล่น: <strong>{formData?.nickname}</strong></div>
-                      <div>• ร่มหมายเลข: <strong>#{formData?.umbrellaId}</strong></div>
-                      <div>• ยืมจาก: <strong>{formData && getLocationForUmbrella(formData.umbrellaId)}</strong></div>
+                      <div>• ชื่อ: <strong>{userProfile?.firstName} {userProfile?.lastName}</strong></div>
+                      <div>• ร่มหมายเลข: <strong>#{selectedUmbrellaId}</strong></div>
+                      <div>• ยืมจาก: <strong>{selectedUmbrellaId && getLocationForUmbrella(selectedUmbrellaId)}</strong></div>
                     </div>
                   </div>
                   
@@ -214,7 +176,7 @@ export default function BorrowForm() {
                         <div className="font-medium text-orange-900">ข้อกำหนดสำคัญ:</div>
                         <div className="text-sm text-orange-800 mt-1">
                           <strong>ยืมจากที่ไหน ต้องคืนที่นั่น</strong><br/>
-                          กรุณาคืนร่มที่ <strong>{formData && getLocationForUmbrella(formData.umbrellaId)}</strong> เท่านั้น
+                          กรุณาคืนร่มที่ <strong>{selectedUmbrellaId && getLocationForUmbrella(selectedUmbrellaId)}</strong> เท่านั้น
                         </div>
                       </div>
                     </div>

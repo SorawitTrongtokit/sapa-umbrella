@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LogOut, Umbrella, Check, User, TrendingUp, RotateCcw, Edit, History, MapPin, Calendar, X, BarChart3, RefreshCw, AlertCircle, Clock, Search, Settings } from 'lucide-react';
+import { LogOut, Umbrella, Check, User, TrendingUp, RotateCcw, Edit, History, MapPin, Calendar, X, BarChart3, RefreshCw, AlertCircle, Clock, Search, Settings, Crown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,13 +14,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { adminLoginSchema, type AdminLogin, LOCATIONS } from '@shared/schema';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { useRoleAccess } from '@/hooks/use-role-access';
 import { useUmbrellaData } from '@/hooks/use-umbrella-data';
 import { updateUmbrella, addActivity } from '@/lib/firebase';
 import { AdminAnalytics } from '@/components/admin-analytics';
 import { ManagementTools } from '@/components/management-tools';
+import { OwnerDashboard } from '@/components/owner-dashboard';
 
 export default function AdminDashboard() {
   const { user, isAuthenticated, login, logout } = useAdminAuth();
+  const { hasAdminAccess, hasOwnerAccess, userProfile } = useRoleAccess();
   const { umbrellas, activities, availableCount, borrowedCount } = useUmbrellaData();
   const { toast } = useToast();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -28,6 +31,7 @@ export default function AdminDashboard() {
   const [viewingLogs, setViewingLogs] = useState<number | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showOwnerDashboard, setShowOwnerDashboard] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -212,6 +216,7 @@ export default function AdminDashboard() {
            activityDate.toDateString() === today.toDateString();
   }).length;
 
+  // Security Check: Must be authenticated AND have admin access
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
@@ -282,22 +287,80 @@ export default function AdminDashboard() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-semibold text-gray-900">Admin Dashboard</h1>
-          <Button 
-            variant="ghost" 
-            onClick={handleLogout}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            <LogOut className="w-4 h-4 mr-1" />
-            ออกจากระบบ
-          </Button>
+  // Check if user wants to view Owner Dashboard
+  if (showOwnerDashboard && hasOwnerAccess) {
+    return <OwnerDashboard />;
+  }
+
+  // Security Check: After authentication, verify admin role
+  if (isAuthenticated && !hasAdminAccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
+        <div className="max-w-md w-full">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-center text-2xl font-bold text-red-600">
+                🚫 ไม่ได้รับอนุญาต
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <p className="text-gray-600">
+                คุณไม่มีสิทธิ์เข้าถึงหน้า Admin Dashboard
+              </p>
+              <p className="text-sm text-gray-500">
+                หน้านี้สำหรับผู้ดูแลระบบเท่านั้น
+              </p>
+              <div className="space-y-2">
+                <Button 
+                  onClick={handleLogout}
+                  className="w-full bg-red-600 hover:bg-red-700"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  ออกจากระบบ
+                </Button>
+                <Button 
+                  onClick={() => window.location.href = '/'}
+                  variant="outline"
+                  className="w-full"
+                >
+                  กลับหน้าหลัก
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">{/* ]}}
+          {/* Header */}
+          <div className="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
+            <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+              <h1 className="text-xl font-semibold text-gray-900">Admin Dashboard</h1>
+              <div className="flex gap-2">
+                {hasOwnerAccess && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowOwnerDashboard(true)}
+                    className="text-purple-600 hover:text-purple-700"
+                  >
+                    <Crown className="w-4 h-4 mr-1" />
+                    Owner Dashboard
+                  </Button>
+                )}
+                <Button 
+                  variant="ghost" 
+                  onClick={handleLogout}
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  <LogOut className="w-4 h-4 mr-1" />
+                  ออกจากระบบ
+                </Button>
+              </div>
+            </div>
+          </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6 pt-24">
         {/* Quick Actions */}

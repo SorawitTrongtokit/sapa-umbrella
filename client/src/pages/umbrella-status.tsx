@@ -96,9 +96,7 @@ export default function UmbrellaStatus() {
                           {activity.type === 'borrow' ? 'ยืม' : 'คืน'}ร่ม #{activity.umbrellaId}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {activity.type === 'borrow' && activity.nickname 
-                            ? `โดย ${activity.nickname} ที่ ${activity.location}` 
-                            : `ที่ ${activity.location}`}
+                          ที่ {activity.location}
                         </p>
                       </div>
                     </div>

@@ -5,7 +5,7 @@ import { Link, useLocation } from 'wouter';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 import { userLoginSchema, UserLogin } from '../../../shared/schema';
-import { userLogin } from '../lib/firebase';
+import { userLogin, resetPassword } from '../lib/firebase';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -16,23 +16,33 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
   const [location, navigate] = useLocation();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    watch,
   } = useForm<UserLogin>({
     resolver: zodResolver(userLoginSchema),
   });
+
+  const emailValue = watch('email');
 
   const onSubmit = async (data: UserLogin) => {
     try {
       setLoading(true);
       setError(null);
       
-      await userLogin(data.email, data.password);
-      navigate('/');
+      const userCredential = await userLogin(data.email, data.password);
+      console.log('Login successful:', userCredential.user.uid);
+      
+      // Wait a moment for auth state to update
+      setTimeout(() => {
+        navigate('/');
+      }, 500);
     } catch (error: any) {
       console.error('Login error:', error);
       
@@ -41,7 +51,7 @@ export default function LoginPage() {
       
       if (error.code === 'auth/user-not-found') {
         errorMessage = 'ไม่พบบัญชีผู้ใช้นี้';
-      } else if (error.code === 'auth/wrong-password') {
+      } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         errorMessage = 'รหัสผ่านไม่ถูกต้อง';
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = 'รูปแบบอีเมลไม่ถูกต้อง';
@@ -57,6 +67,36 @@ export default function LoginPage() {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!emailValue) {
+      setError('กรุณากรอกอีเมลก่อนกดรีเซ็ตรหัสผ่าน');
+      return;
+    }
+
+    try {
+      setResetLoading(true);
+      setError(null);
+      
+      await resetPassword(emailValue);
+      setResetSuccess(true);
+      setTimeout(() => setResetSuccess(false), 5000);
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      
+      let errorMessage = 'เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน';
+      
+      if (error.code === 'auth/user-not-found') {
+        errorMessage = 'ไม่พบบัญชีผู้ใช้นี้';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'รูปแบบอีเมลไม่ถูกต้อง';
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -65,7 +105,7 @@ export default function LoginPage() {
             เข้าสู่ระบบ
           </CardTitle>
           <CardDescription className="text-gray-600">
-            ระบบยืม-คืนร่ม โรงเรียนสราสาสน์ประเทศไทย
+            ระบบยืม-คืนร่ม PCSHSPL
           </CardDescription>
         </CardHeader>
         
@@ -77,14 +117,22 @@ export default function LoginPage() {
               </Alert>
             )}
 
+            {resetSuccess && (
+              <Alert className="border-green-200 bg-green-50">
+                <AlertDescription className="text-green-800">
+                  ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลของคุณแล้ว กรุณาตรวจสอบอีเมล
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="email">อีเมล</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="example@student.sst.ac.th"
+                placeholder="example@pccpl.ac.th"
                 {...register('email')}
-                disabled={loading}
+                disabled={loading || resetLoading}
               />
               {errors.email && (
                 <p className="text-sm text-red-600">{errors.email.message}</p>
@@ -99,7 +147,7 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="รหัสผ่าน"
                   {...register('password')}
-                  disabled={loading}
+                  disabled={loading || resetLoading}
                 />
                 <Button
                   type="button"
@@ -107,7 +155,7 @@ export default function LoginPage() {
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
-                  disabled={loading}
+                  disabled={loading || resetLoading}
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />
@@ -124,7 +172,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               className="w-full"
-              disabled={loading}
+              disabled={loading || resetLoading}
             >
               {loading ? (
                 <>
@@ -136,7 +184,24 @@ export default function LoginPage() {
               )}
             </Button>
 
-            <div className="text-center">
+            <div className="text-center space-y-2">
+              <Button
+                type="button"
+                variant="link"
+                className="text-sm text-blue-600 hover:text-blue-500"
+                onClick={handleResetPassword}
+                disabled={loading || resetLoading || !emailValue}
+              >
+                {resetLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                    กำลังส่งลิงก์รีเซ็ต...
+                  </>
+                ) : (
+                  'ลืมรหัสผ่าน?'
+                )}
+              </Button>
+              
               <p className="text-sm text-gray-600">
                 ยังไม่มีบัญชี?{' '}
                 <Link

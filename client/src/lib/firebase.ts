@@ -1,7 +1,8 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
-import { getDatabase, ref, set, push, onValue, off } from "firebase/database";
-import { UserProfile, UserRegistration } from "../../../shared/schema";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, updatePassword } from "firebase/auth";
+import { getDatabase, ref, set, push, onValue, off, get, update } from "firebase/database";
+import { UserProfile, UserRegistration, AdminUserUpdate } from "../../../shared/schema";
+import { encryptPassword, decryptPassword } from "./encryption";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCKrI6yFRoRW9QlYQY9VxMe0DxC1yTEusw",
@@ -37,7 +38,10 @@ export const userRegister = async (userData: UserRegistration) => {
   const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
   const user = userCredential.user;
   
-  // Save user profile to database
+  // Encrypt password for storage
+  const encryptedPassword = encryptPassword(userData.password);
+  
+  // Save user profile to database with encrypted password
   const userProfile: UserProfile = {
     uid: user.uid,
     firstName: userData.firstName,
@@ -48,7 +52,8 @@ export const userRegister = async (userData: UserRegistration) => {
     email: userData.email,
     role: 'user',
     createdAt: Date.now(),
-    updatedAt: Date.now()
+    updatedAt: Date.now(),
+    encryptedPassword: encryptedPassword
   };
   
   await set(ref(database, `users/${user.uid}`), userProfile);
@@ -57,6 +62,51 @@ export const userRegister = async (userData: UserRegistration) => {
 
 export const userLogout = async () => {
   return await signOut(auth);
+};
+
+// Reset password
+export const resetPassword = async (email: string) => {
+  return await sendPasswordResetEmail(auth, email);
+};
+
+// Owner/Admin functions for user management
+export const getAllUsers = async (): Promise<UserProfile[]> => {
+  return new Promise((resolve, reject) => {
+    const usersRef = ref(database, 'users');
+    onValue(usersRef, (snapshot) => {
+      const usersData = snapshot.val();
+      if (usersData) {
+        const users = Object.values(usersData) as UserProfile[];
+        resolve(users);
+      } else {
+        resolve([]);
+      }
+    }, { onlyOnce: true });
+  });
+};
+
+export const updateUserProfile = async (uid: string, userData: AdminUserUpdate): Promise<void> => {
+  const userRef = ref(database, `users/${uid}`);
+  const updatedData = {
+    ...userData,
+    updatedAt: Date.now()
+  };
+  
+  console.log('Firebase update - UID:', uid);
+  console.log('Firebase update - Data:', updatedData);
+  
+  await update(userRef, updatedData);
+};
+
+export const deleteUser = async (uid: string): Promise<void> => {
+  const userRef = ref(database, `users/${uid}`);
+  await set(userRef, null);
+};
+
+// Note: Password reset for other users requires Firebase Admin SDK
+// This is a workaround using email reset
+export const resetUserPassword = async (email: string): Promise<void> => {
+  return await sendPasswordResetEmail(auth, email);
 };
 
 // Get user profile
@@ -136,5 +186,64 @@ export const initializeUmbrellas = async () => {
         set(umbrellaRef, defaultData);
       }
     }, { onlyOnce: true });
+  }
+};
+
+// Admin function to set temporary password for a user
+export const setTemporaryPassword = async (userUid: string, tempPassword: string): Promise<void> => {
+  const userRef = ref(database, `users/${userUid}`);
+  const tempPasswordData = {
+    temporaryPassword: tempPassword,
+    tempPasswordCreated: Date.now(),
+    tempPasswordExpires: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
+    requirePasswordChange: true,
+    updatedAt: Date.now()
+  };
+  
+  await update(userRef, tempPasswordData);
+};
+
+// Get temporary password for a user (Owner only)
+export const getTemporaryPassword = async (userUid: string): Promise<string | null> => {
+  const userRef = ref(database, `users/${userUid}`);
+  const snapshot = await get(userRef);
+  
+  if (snapshot.exists()) {
+    const userData = snapshot.val();
+    if (userData.temporaryPassword && userData.tempPasswordExpires > Date.now()) {
+      return userData.temporaryPassword;
+    }
+  }
+  
+  return null;
+};
+
+// Generate random password
+export const generateRandomPassword = (): string => {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  let password = '';
+  for (let i = 0; i < 8; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+};
+
+// Get decrypted password (Owner only)
+export const getDecryptedPassword = async (userUid: string): Promise<string | null> => {
+  try {
+    const userRef = ref(database, `users/${userUid}`);
+    const snapshot = await get(userRef);
+    
+    if (snapshot.exists()) {
+      const userData = snapshot.val();
+      if (userData.encryptedPassword) {
+        return decryptPassword(userData.encryptedPassword);
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error getting decrypted password:', error);
+    throw new Error('Failed to get password');
   }
 };

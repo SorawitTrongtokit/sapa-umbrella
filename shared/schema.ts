@@ -105,12 +105,43 @@ export const userProfileSchema = z.object({
   studentNumber: z.string(),
   phone: z.string(),
   email: z.string(),
-  role: z.enum(['user', 'admin']).default('user'),
+  role: z.enum(['user', 'admin', 'owner']).default('user'),
   createdAt: z.number(),
-  updatedAt: z.number()
+  updatedAt: z.number(),
+  // Encrypted password (for admin management)
+  encryptedPassword: z.string().optional(),
+  // Temporary password fields (optional)
+  temporaryPassword: z.string().optional(),
+  tempPasswordCreated: z.number().optional(),
+  tempPasswordExpires: z.number().optional(),
+  requirePasswordChange: z.boolean().optional()
 });
 
 export type UserProfile = z.infer<typeof userProfileSchema>;
+
+// Admin user management schema
+export const adminUserUpdateSchema = z.object({
+  firstName: z.string().min(1, "กรุณากรอกชื่อ"),
+  lastName: z.string().min(1, "กรุณากรอกนามสกุล"),
+  grade: z.string().min(1, "กรุณากรอกชั้น"),
+  studentNumber: z.string().min(1, "กรุณากรอกเลขที่"),
+  phone: z.string().regex(/^[0-9]{10}$/, "กรุณากรอกเบอร์โทร 10 หลัก"),
+  email: z.string().email("รูปแบบอีเมลไม่ถูกต้อง"),
+  role: z.enum(['user', 'admin', 'owner'])
+});
+
+export type AdminUserUpdate = z.infer<typeof adminUserUpdateSchema>;
+
+// Password reset by admin schema
+export const adminPasswordResetSchema = z.object({
+  newPassword: z.string().min(6, "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"),
+  confirmPassword: z.string().min(1, "กรุณายืนยันรหัสผ่าน")
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "รหัสผ่านไม่ตรงกัน",
+  path: ["confirmPassword"]
+});
+
+export type AdminPasswordReset = z.infer<typeof adminPasswordResetSchema>;
 
 // Activity schema
 export const activitySchema = z.object({
@@ -119,7 +150,16 @@ export const activitySchema = z.object({
   nickname: z.string().optional(),
   location: z.enum([LOCATIONS.DOME, LOCATIONS.SPORTS, LOCATIONS.CAFETERIA]),
   timestamp: z.number(),
-  note: z.string().optional()
+  note: z.string().optional(),
+  userInfo: z.object({
+    uid: z.string(),
+    email: z.string(),
+    firstName: z.string(),
+    lastName: z.string(),
+    grade: z.string(),
+    studentNumber: z.string(),
+    phone: z.string()
+  }).optional()
 });
 
 export type Activity = z.infer<typeof activitySchema>;

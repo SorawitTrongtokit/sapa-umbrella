@@ -1,7 +1,7 @@
 {
-  "name": "ระบบยืม-คืนร่ม",
-  "short_name": "Umbrella System",
-  "description": "Real-time umbrella borrowing system for school",
+  "name": "ระบบยืม-คืนร่ม PCSHSPL",
+  "short_name": "Umbrella PCSHSPL",
+  "description": "Real-time umbrella borrowing system for Princess Chulabhorn Science High School Phitsanulok",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -9,15 +9,15 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/favicon.ico",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/x-icon",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png", 
+      "src": "/favicon.ico",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/x-icon",
       "purpose": "any maskable"
     }
   ],
