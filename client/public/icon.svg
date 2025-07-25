@@ -1,0 +1,16 @@
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+  <rect width="192" height="192" fill="#2563eb"/>
+  <g transform="translate(96,96)">
+    <!-- Umbrella Top -->
+    <path d="M-60 -10 Q-60 -50 -30 -60 Q0 -70 30 -60 Q60 -50 60 -10 L50 -10 Q50 -40 30 -45 Q15 -50 0 -50 Q-15 -50 -30 -45 Q-50 -40 -50 -10 Z" fill="white"/>
+    <!-- Umbrella Handle -->
+    <rect x="-3" y="-10" width="6" height="60" fill="white"/>
+    <!-- Umbrella Hook -->
+    <path d="M0 50 Q10 60 20 50" stroke="white" stroke-width="6" fill="none"/>
+    <!-- Rain drops -->
+    <circle cx="-40" cy="-80" r="3" fill="white" opacity="0.8"/>
+    <circle cx="25" cy="-85" r="2" fill="white" opacity="0.8"/>
+    <circle cx="45" cy="-75" r="2.5" fill="white" opacity="0.8"/>
+    <circle cx="-20" cy="-90" r="2" fill="white" opacity="0.8"/>
+  </g>
+</svg>
