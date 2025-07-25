@@ -10,12 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useUserAuth } from '@/hooks/use-user-auth';
 import { borrowFormSchema, type BorrowForm, LOCATIONS, getLocationForUmbrella } from '@shared/schema';
 import { useUmbrellaData } from '@/hooks/use-umbrella-data';
 import { updateUmbrella, addActivity } from '@/lib/firebase';
 
 export default function BorrowForm() {
   const { toast } = useToast();
+  const { userProfile } = useUserAuth();
   const { getAvailableUmbrellas } = useUmbrellaData();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -24,8 +26,8 @@ export default function BorrowForm() {
   const form = useForm<BorrowForm>({
     resolver: zodResolver(borrowFormSchema),
     defaultValues: {
-      nickname: '',
-      phone: '',
+      nickname: userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : '',
+      phone: userProfile?.phone || '',
       umbrellaId: 0
     }
   });

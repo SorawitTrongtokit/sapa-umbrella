@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { getDatabase, ref, set, push, onValue, off } from "firebase/database";
+import { UserProfile, UserRegistration } from "../../../shared/schema";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCKrI6yFRoRW9QlYQY9VxMe0DxC1yTEusw",
@@ -24,6 +25,49 @@ export const adminLogin = async (email: string, password: string) => {
 
 export const adminLogout = async () => {
   return await signOut(auth);
+};
+
+// User authentication functions
+export const userLogin = async (email: string, password: string) => {
+  return await signInWithEmailAndPassword(auth, email, password);
+};
+
+export const userRegister = async (userData: UserRegistration) => {
+  // Create user account
+  const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
+  const user = userCredential.user;
+  
+  // Save user profile to database
+  const userProfile: UserProfile = {
+    uid: user.uid,
+    firstName: userData.firstName,
+    lastName: userData.lastName,
+    grade: userData.grade,
+    studentNumber: userData.studentNumber,
+    phone: userData.phone,
+    email: userData.email,
+    role: 'user',
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  };
+  
+  await set(ref(database, `users/${user.uid}`), userProfile);
+  return userCredential;
+};
+
+export const userLogout = async () => {
+  return await signOut(auth);
+};
+
+// Get user profile
+export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
+  return new Promise((resolve) => {
+    const userRef = ref(database, `users/${uid}`);
+    onValue(userRef, (snapshot) => {
+      const userData = snapshot.val();
+      resolve(userData);
+    }, { onlyOnce: true });
+  });
 };
 
 // Database functions

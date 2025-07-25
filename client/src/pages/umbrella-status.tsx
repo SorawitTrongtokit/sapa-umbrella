@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { UmbrellaCard } from '@/components/umbrella-card';
 import { LoadingPage } from '@/components/loading-skeletons';
 import { UsageStats } from '@/components/usage-stats';
+import { UserProfile } from '@/components/user-profile';
 import { useUmbrellaData } from '@/hooks/use-umbrella-data';
 import { getUmbrellasForLocation, LOCATIONS } from '@shared/schema';
 
@@ -33,6 +34,9 @@ export default function UmbrellaStatus() {
       </div>
 
             <div className="max-w-md mx-auto p-4 space-y-6">
+        {/* User Profile */}
+        <UserProfile />
+        
         {/* Usage Statistics - แสดงแค่ว่าง/ยืม */}
         <UsageStats 
           availableCount={availableCount}

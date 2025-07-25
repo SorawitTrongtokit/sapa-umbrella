@@ -71,6 +71,47 @@ export const adminLoginSchema = z.object({
 
 export type AdminLogin = z.infer<typeof adminLoginSchema>;
 
+// User registration schema
+export const userRegistrationSchema = z.object({
+  firstName: z.string().min(1, "กรุณากรอกชื่อ"),
+  lastName: z.string().min(1, "กรุณากรอกนามสกุล"),
+  grade: z.string().min(1, "กรุณากรอกชั้น"),
+  studentNumber: z.string().min(1, "กรุณากรอกเลขที่"),
+  phone: z.string().regex(/^[0-9]{10}$/, "กรุณากรอกเบอร์โทร 10 หลัก"),
+  email: z.string().email("รูปแบบอีเมลไม่ถูกต้อง"),
+  password: z.string().min(6, "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"),
+  confirmPassword: z.string().min(1, "กรุณายืนยันรหัสผ่าน")
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "รหัสผ่านไม่ตรงกัน",
+  path: ["confirmPassword"]
+});
+
+export type UserRegistration = z.infer<typeof userRegistrationSchema>;
+
+// User login schema
+export const userLoginSchema = z.object({
+  email: z.string().email("รูปแบบอีเมลไม่ถูกต้อง"),
+  password: z.string().min(1, "กรุณากรอกรหัสผ่าน")
+});
+
+export type UserLogin = z.infer<typeof userLoginSchema>;
+
+// User profile schema
+export const userProfileSchema = z.object({
+  uid: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  grade: z.string(),
+  studentNumber: z.string(),
+  phone: z.string(),
+  email: z.string(),
+  role: z.enum(['user', 'admin']).default('user'),
+  createdAt: z.number(),
+  updatedAt: z.number()
+});
+
+export type UserProfile = z.infer<typeof userProfileSchema>;
+
 // Activity schema
 export const activitySchema = z.object({
   type: z.enum(['borrow', 'return', 'admin_update']),

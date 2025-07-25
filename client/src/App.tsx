@@ -16,10 +16,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { NetworkStatus } from "@/components/network-status";
 import { BottomNavigation } from "@/components/bottom-navigation";
+import { ProtectedRoute } from "@/components/protected-route";
 import UmbrellaStatus from "@/pages/umbrella-status";
 import BorrowForm from "@/pages/borrow-form";
 import ReturnForm from "@/pages/return-form";
 import AdminDashboard from "@/pages/admin-dashboard";
+import LoginPage from "@/pages/login";
+import RegisterPage from "@/pages/register";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
@@ -27,15 +30,38 @@ function Router() {
   return (
     <>
       <Switch>
-        <Route path="/" component={UmbrellaStatus} />
-        <Route path="/borrow" component={BorrowForm} />
-        <Route path="/return" component={ReturnForm} />
+        {/* Public routes */}
+        <Route path="/login" component={LoginPage} />
+        <Route path="/register" component={RegisterPage} />
+        
+        {/* Protected routes */}
+        <Route path="/">
+          <ProtectedRoute>
+            <UmbrellaStatus />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/borrow">
+          <ProtectedRoute>
+            <BorrowForm />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/return">
+          <ProtectedRoute>
+            <ReturnForm />
+          </ProtectedRoute>
+        </Route>
         <Route path="/admin" component={AdminDashboard} />
         <Route component={NotFound} />
       </Switch>
       
-      {/* Show bottom navigation on all pages except admin */}
+      {/* Show bottom navigation on protected pages except admin */}
       <Route path="/admin">
+        {() => null}
+      </Route>
+      <Route path="/login">
+        {() => null}
+      </Route>
+      <Route path="/register">
         {() => null}
       </Route>
       <Route>
