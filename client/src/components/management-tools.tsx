@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { 
   RefreshCw, Download, AlertTriangle, Settings, 
@@ -20,6 +21,8 @@ interface ManagementToolsProps {
 export function ManagementTools({ activities, umbrellas }: ManagementToolsProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [showClearDialog, setShowClearDialog] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
 
   // หาร่มที่มีปัญหา
   const problemUmbrellas = Object.values(umbrellas).filter((umbrella: any) => {
@@ -93,11 +96,12 @@ export function ManagementTools({ activities, umbrellas }: ManagementToolsProps)
 
   // ฟังก์ชันรีเซ็ตระบบ
   const resetSystem = async () => {
-    if (!confirm('คุณแน่ใจหรือไม่ที่จะรีเซ็ตระบบ? การกระทำนี้จะลบ Activity ทั้งหมด!')) {
-      return;
-    }
+    setShowResetDialog(true);
+  };
 
+  const handleConfirmReset = async () => {
     setIsLoading(true);
+    setShowResetDialog(false);
     try {
       // รีเซ็ตร่มทั้งหมดให้เป็น available
       for (let i = 1; i <= 21; i++) {
@@ -141,19 +145,13 @@ export function ManagementTools({ activities, umbrellas }: ManagementToolsProps)
 
   // ฟังก์ชันลบ Activity ทั้งหมด
   const clearActivities = async () => {
-    const result = confirm(
-      '🗑️ ลบ Activity ทั้งหมด\n\n' +
-      `คุณกำลังจะลบประวัติกิจกรรมทั้งหมด ${activities.length} รายการ\n\n` +
-      '⚠️ การกระทำนี้ไม่สามารถยกเลิกได้!\n' +
-      '- ประวัติการยืม-คืนจะหายไปทั้งหมด\n' +
-      '- ข้อมูลสถิติจะถูกรีเซ็ต\n' +
-      '- ร่มจะยังคงสถานะปัจจุบัน\n\n' +
-      'ยืนยันการลบ?'
-    );
+    setShowClearDialog(true);
+  };
 
-    if (!result) return;
-
+  const handleConfirmClear = async () => {
     setIsLoading(true);
+    setShowClearDialog(false);
+    
     try {
       await clearAllActivities();
 
@@ -505,6 +503,121 @@ export function ManagementTools({ activities, umbrellas }: ManagementToolsProps)
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Clear Activities Confirmation Dialog */}
+      <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
+        <AlertDialogContent className="max-w-md mx-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-500" />
+              ลบ Activity ทั้งหมด
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="text-left space-y-3">
+                <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <div className="font-medium text-red-900">⚠️ คำเตือน!</div>
+                      <div className="text-sm text-red-800 mt-1">
+                        การกระทำนี้<strong>ไม่สามารถยกเลิกได้</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <h4 className="font-medium text-blue-900 mb-2">จะลบข้อมูลต่อไปนี้:</h4>
+                  <div className="text-sm text-blue-800 space-y-1">
+                    <div>• ประวัติกิจกรรมทั้งหมด: <strong>{activities.length} รายการ</strong></div>
+                    <div>• การยืม: <strong>{activities.filter(a => a.type === 'borrow').length} ครั้ง</strong></div>
+                    <div>• การคืน: <strong>{activities.filter(a => a.type === 'return').length} ครั้ง</strong></div>
+                    <div>• Admin Actions: <strong>{activities.filter(a => a.type === 'admin_update').length} ครั้ง</strong></div>
+                  </div>
+                </div>
+                
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <div className="text-sm text-green-800">
+                    <strong>หมายเหตุ:</strong><br/>
+                    • สถานะร่มปัจจุบันจะไม่เปลี่ยนแปลง<br/>
+                    • ข้อมูลสถิติจะถูกรีเซ็ต<br/>
+                    • เหมาะสำหรับการทดสอบระบบ
+                  </div>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={() => setShowClearDialog(false)}
+              disabled={isLoading}
+            >
+              ยกเลิก
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmClear}
+              disabled={isLoading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              {isLoading ? 'กำลังลบ...' : 'ยืนยันการลบ'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reset System Confirmation Dialog */}
+      <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <AlertDialogContent className="max-w-md mx-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RotateCcw className="w-5 h-5 text-orange-500" />
+              รีเซ็ตระบบ
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="text-left space-y-3">
+                <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <div className="font-medium text-orange-900">⚠️ คำเตือนสำคัญ!</div>
+                      <div className="text-sm text-orange-800 mt-1">
+                        การรีเซ็ตจะลบ Activity ทั้งหมดและรีเซ็ตสถานะร่ม
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-red-50 p-3 rounded-lg">
+                  <h4 className="font-medium text-red-900 mb-2">การกระทำที่จะเกิดขึ้น:</h4>
+                  <div className="text-sm text-red-800 space-y-1">
+                    <div>• ร่มทั้งหมดจะกลับเป็นสถานะ "ว่าง"</div>
+                    <div>• ลบประวัติการยืม-คืนทั้งหมด</div>
+                    <div>• รีเซ็ตตำแหน่งร่มเป็นค่าเริ่มต้น</div>
+                    <div>• ลบข้อมูลผู้ยืมทั้งหมด</div>
+                  </div>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={() => setShowResetDialog(false)}
+              disabled={isLoading}
+            >
+              ยกเลิก
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmReset}
+              disabled={isLoading}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              {isLoading ? 'กำลังรีเซ็ต...' : 'ยืนยันการรีเซ็ต'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
