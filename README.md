@@ -256,7 +256,20 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🏫 Credits
 
+**Developed by:** Sorawit  
+**School:** PCSHSPL (Princess Chulabhorn Science High School Phitsanulok)
+
 Built for school umbrella management systems. Designed with mobile-first approach for easy student access and comprehensive admin controls.
+
+### 🎯 Project Background
+This umbrella borrowing system was developed to solve the real-world problem of managing shared umbrellas across multiple campus locations. The system helps students easily borrow and return umbrellas while providing administrators with comprehensive management tools and analytics.
+
+### 🏆 Technical Achievements
+- **Real-time Data Synchronization** using Firebase Realtime Database
+- **Progressive Web App (PWA)** capabilities for offline usage
+- **Mobile-First Design** optimized for student smartphone usage
+- **Comprehensive Admin Dashboard** with analytics and management tools
+- **Scalable Architecture** suitable for educational institutions
 
 ---
 

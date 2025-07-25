@@ -1,3 +1,13 @@
+/**
+ * PCSHSPL Umbrella Borrowing System
+ * 
+ * Developed by: Sorawit
+ * School: Princess Chulabhorn Science High School Phitsanulok (PCSHSPL)
+ * 
+ * A real-time umbrella management system built with React, Firebase, and PWA technologies.
+ * Designed to help students efficiently borrow and return umbrellas across multiple campus locations.
+ */
+
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";

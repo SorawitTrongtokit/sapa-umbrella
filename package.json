@@ -1,6 +1,11 @@
 {
   "name": "umbrella-system",
   "version": "1.0.0",
+  "description": "Real-time umbrella borrowing system for PCSHSPL - A Progressive Web App built with React and Firebase",
+  "author": {
+    "name": "Sorawit",
+    "school": "PCSHSPL (Princess Chulabhorn Science High School Phitsanulok)"
+  },
   "type": "module",
   "license": "MIT",
   "scripts": {
