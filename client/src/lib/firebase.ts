@@ -3,13 +3,13 @@ import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { getDatabase, ref, set, push, onValue, off } from "firebase/database";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-  databaseURL: `https://${import.meta.env.VITE_FIREBASE_PROJECT_ID}-default-rtdb.asia-southeast1.firebasedatabase.app`,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebasestorage.app`,
+  apiKey: "AIzaSyCKrI6yFRoRW9QlYQY9VxMe0DxC1yTEusw",
+  authDomain: "umbrella-system-e0ae7.firebaseapp.com",
+  databaseURL: "https://umbrella-system-e0ae7-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "umbrella-system-e0ae7",
+  storageBucket: "umbrella-system-e0ae7.firebasestorage.app",
   messagingSenderId: "644775621893",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  appId: "1:644775621893:web:76175ce428a8d99550336c",
   measurementId: "G-4J12KF1H0B"
 };
 
@@ -37,16 +37,34 @@ export const addActivity = async (activity: any) => {
   return await push(activitiesRef, activity);
 };
 
+export const clearAllActivities = async () => {
+  const activitiesRef = ref(database, 'activities');
+  return await set(activitiesRef, null);
+};
+
 export const subscribeToUmbrellas = (callback: (data: any) => void) => {
   const umbrellasRef = ref(database, 'umbrellas');
   onValue(umbrellasRef, callback);
   return () => off(umbrellasRef, 'value', callback);
 };
 
-export const subscribeToActivities = (callback: (data: any) => void) => {
+export const subscribeToActivities = (callback: (data: any) => void, limit = 50) => {
+  // Limit activities to reduce bandwidth usage (Firebase free tier consideration)
   const activitiesRef = ref(database, 'activities');
-  onValue(activitiesRef, callback);
-  return () => off(activitiesRef, 'value', callback);
+  onValue(activitiesRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      // Sort and limit to last 50 activities to save on data transfer
+      const sortedData = Object.entries(data)
+        .sort(([, a]: any, [, b]: any) => b.timestamp - a.timestamp)
+        .slice(0, limit)
+        .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+      callback({ val: () => sortedData });
+    } else {
+      callback(snapshot);
+    }
+  });
+  return () => off(activitiesRef, 'value');
 };
 
 // Initialize umbrella data if not exists

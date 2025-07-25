@@ -1,0 +1,19 @@
+{
+  "rules": {
+    "umbrellas": {
+      ".read": true,
+      ".write": "auth != null",
+      "$umbrellaId": {
+        ".write": "auth != null || ($umbrellaId.matches(/^(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21)$/) && (newData.child('status').val() == 'borrowed' || newData.child('status').val() == 'available') && newData.child('id').val() == $umbrellaId && newData.hasChildren(['id', 'status', 'currentLocation']))",
+        ".validate": "newData.child('id').val() >= 1 && newData.child('id').val() <= 21 && newData.child('status').val().matches(/^(available|borrowed)$/) && newData.child('currentLocation').val().matches(/^(ใต้โดม|ศูนย์กีฬา|โรงอาหาร)$/) && ((newData.child('status').val() == 'available' && !newData.hasChild('borrower')) || (newData.child('status').val() == 'borrowed' && newData.child('borrower').hasChildren(['nickname', 'phone', 'timestamp']) && newData.child('borrower/phone').val().matches(/^[0-9]{10}$/) && newData.child('borrower/nickname').val().length >= 1 && newData.child('borrower/timestamp').val() > 0))"
+      }
+    },
+    "activities": {
+      ".read": true,
+      ".write": "auth != null || (newData.hasChildren(['type', 'umbrellaId', 'location', 'timestamp']) && newData.child('type').val().matches(/^(borrow|return)$/) && newData.child('umbrellaId').val() >= 1 && newData.child('umbrellaId').val() <= 21 && newData.child('location').val().matches(/^(ใต้โดม|ศูนย์กีฬา|โรงอาหาร)$/) && newData.child('timestamp').val() > (now - 300000))",
+      "$activityId": {
+        ".validate": "newData.hasChildren(['type', 'umbrellaId', 'location', 'timestamp']) && newData.child('type').val().matches(/^(borrow|return|admin_update)$/) && newData.child('umbrellaId').val() >= 1 && newData.child('umbrellaId').val() <= 21 && newData.child('location').val().matches(/^(ใต้โดม|ศูนย์กีฬา|โรงอาหาร)$/) && newData.child('timestamp').val() > 0 && newData.child('timestamp').val() <= now + 60000"
+      }
+    }
+  }
+}

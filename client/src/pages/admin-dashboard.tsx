@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LogOut, Umbrella, Check, User, TrendingUp, RotateCcw, Edit, History, MapPin, Calendar, X, BarChart3, RefreshCw, AlertCircle, Clock, Search } from 'lucide-react';
+import { LogOut, Umbrella, Check, User, TrendingUp, RotateCcw, Edit, History, MapPin, Calendar, X, BarChart3, RefreshCw, AlertCircle, Clock, Search, Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,11 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { adminLoginSchema, type AdminLogin, LOCATIONS } from '@shared/schema';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { useUmbrellaData } from '@/hooks/use-umbrella-data';
 import { updateUmbrella, addActivity } from '@/lib/firebase';
+import { AdminAnalytics } from '@/components/admin-analytics';
+import { ManagementTools } from '@/components/management-tools';
 
 export default function AdminDashboard() {
   const { user, isAuthenticated, login, logout } = useAdminAuth();
@@ -282,7 +285,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-xl font-semibold text-gray-900">Admin Dashboard</h1>
           <Button 
@@ -296,7 +299,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6 pt-24">
         {/* Quick Actions */}
         <div className="mb-6 flex flex-wrap gap-4">
           <div className="flex-1 min-w-64">
@@ -402,17 +405,27 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Umbrella Management Table */}
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              จัดการร่ม
-              <Badge variant="secondary" className="ml-2">
-                แสดง {filteredUmbrellas.length} จาก 21 ร่ม
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* Main Content with Tabs */}
+        <Tabs defaultValue="umbrellas" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="umbrellas">จัดการร่ม</TabsTrigger>
+            <TabsTrigger value="analytics">สถิติและรายงาน</TabsTrigger>
+            <TabsTrigger value="management">เครื่องมือจัดการ</TabsTrigger>
+          </TabsList>
+
+          {/* Umbrella Management Tab */}
+          <TabsContent value="umbrellas" className="space-y-6 mb-20">
+            {/* Umbrella Management Table */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  จัดการร่ม
+                  <Badge variant="secondary" className="ml-2">
+                    แสดง {filteredUmbrellas.length} จาก 21 ร่ม
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -516,6 +529,18 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
+        </TabsContent>
+
+        {/* Analytics Tab */}
+        <TabsContent value="analytics" className="space-y-6 mb-20">
+          <AdminAnalytics activities={activities} umbrellas={umbrellas} />
+        </TabsContent>
+
+        {/* Management Tools Tab */}
+        <TabsContent value="management" className="space-y-6 mb-20">
+          <ManagementTools activities={activities} umbrellas={umbrellas} />
+        </TabsContent>
+      </Tabs>
 
         {/* Edit Umbrella Dialog */}
         <Dialog open={!!editingUmbrella} onOpenChange={() => setEditingUmbrella(null)}>

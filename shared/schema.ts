@@ -56,10 +56,9 @@ export type BorrowForm = z.infer<typeof borrowFormSchema> & {
   location?: Location; // Added during form processing
 };
 
-// Return form schema
+// Return form schema - ลบ returnLocation เพราะจะคืนที่เดิมอัตโนมัติ
 export const returnFormSchema = z.object({
-  umbrellaId: z.number().min(1).max(21),
-  returnLocation: z.enum([LOCATIONS.DOME, LOCATIONS.SPORTS, LOCATIONS.CAFETERIA]).optional()
+  umbrellaId: z.number().min(1).max(21, "กรุณาเลือกหมายเลขร่ม 1-21")
 });
 
 export type ReturnForm = z.infer<typeof returnFormSchema>;
