@@ -40,6 +40,7 @@ export default function BorrowForm() {
         status: 'borrowed',
         currentLocation: location,
         borrower: {
+          uid: userProfile.uid,
           nickname: borrowerName,
           phone: userProfile.phone,
           timestamp

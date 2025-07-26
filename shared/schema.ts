@@ -31,6 +31,7 @@ export const umbrellaSchema = z.object({
   status: z.enum([UMBRELLA_STATUS.AVAILABLE, UMBRELLA_STATUS.BORROWED]),
   currentLocation: z.enum([LOCATIONS.DOME, LOCATIONS.SPORTS, LOCATIONS.CAFETERIA]),
   borrower: z.object({
+    uid: z.string(),
     nickname: z.string(),
     phone: z.string().regex(/^[0-9]{10}$/, "Phone must be 10 digits"),
     timestamp: z.number()

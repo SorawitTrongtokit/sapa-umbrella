@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, UserCheck, UserX, Settings, Shield, Crown, Eye, EyeOff, Loader2, Search } from 'lucide-react';
+import { Users, UserCheck, UserX, Settings, Shield, Crown, Eye, EyeOff, Loader2, Search, ArrowLeft, Home } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../components/ui/alert-dialog';
 import { useToast } from '../hooks/use-toast';
 
-export function OwnerDashboard() {
+export function OwnerDashboard({ onBackToAdmin }: { onBackToAdmin?: () => void }) {
   const { hasOwnerAccess, userProfile } = useRoleAccess();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -336,46 +336,70 @@ export function OwnerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-2 sm:p-4 pb-20">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
       <div className="max-w-6xl mx-auto">
         <div className="mb-4 sm:mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-            Owner Dashboard
-          </h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-1">จัดการข้อมูลและสิทธิ์ของผู้ใช้ทั้งหมด</p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
+            <div className="flex items-center gap-2">
+              {onBackToAdmin && (
+                <Button 
+                  variant="outline" 
+                  onClick={onBackToAdmin}
+                  className="text-gray-600 hover:text-gray-700 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
+                >
+                  <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                  <span className="hidden sm:inline">กลับ Admin Dashboard</span>
+                  <span className="sm:hidden">Admin</span>
+                </Button>
+              )}
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = '/'}
+                className="text-gray-600 hover:text-gray-700 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
+              >
+                <Home className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                <span className="hidden sm:inline">กลับหน้าหลัก</span>
+                <span className="sm:hidden">หน้าหลัก</span>
+              </Button>
+            </div>
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Crown className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-purple-600" />
+              Owner Dashboard
+            </h1>
+          </div>
+          <p className="text-xs sm:text-sm md:text-base text-gray-600 mt-1">จัดการข้อมูลและสิทธิ์ของผู้ใช้ทั้งหมด</p>
         </div>
 
         <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Users className="w-5 h-5" />
+          <CardHeader className="pb-3 sm:pb-4">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Users className="w-4 h-4 sm:w-5 sm:h-5" />
               ผู้ใช้ทั้งหมด ({filteredUsers.length}/{users.length} คน)
             </CardTitle>
             
             {/* Search Bar */}
-            <div className="relative mt-4">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <div className="relative mt-3 sm:mt-4">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3 sm:w-4 sm:h-4" />
               <Input
                 type="text"
                 placeholder="ค้นหาจากชื่อ, อีเมล, ชั้น, เลขที่..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-8 sm:pl-10 text-sm sm:text-base h-8 sm:h-10"
               />
             </div>
           </CardHeader>
-          <CardContent className="p-2 sm:p-6">
-            <div className="space-y-3 sm:space-y-4">
+          <CardContent className="p-3 sm:p-6">
+            <div className="space-y-2 sm:space-y-3">
               {filteredUsers.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-6 sm:py-8 text-gray-500 text-sm sm:text-base">
                   {searchTerm ? 'ไม่พบผู้ใช้ที่ตรงกับการค้นหา' : 'ไม่มีผู้ใช้ในระบบ'}
                 </div>
               ) : (
                 filteredUsers.map((user) => (
-                  <div key={user.uid} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border rounded-lg bg-white">
+                  <div key={user.uid} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border rounded-lg bg-white shadow-sm">
                     <div className="flex-1 mb-3 sm:mb-0">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-2">
                         <h3 className="font-semibold text-sm sm:text-base">{user.firstName} {user.lastName}</h3>
                         {getRoleBadge(user.role)}
                       </div>
@@ -383,34 +407,37 @@ export function OwnerDashboard() {
                         <p className="break-all">📧 {user.email}</p>
                         <p>🎓 ชั้น {user.grade} เลขที่ {user.studentNumber}</p>
                         <p>📱 {user.phone}</p>
-                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-2">
                           <span className="text-xs">สร้าง: {new Date(user.createdAt).toLocaleDateString('th-TH')}</span>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-xs h-6 px-2"
+                            className="text-xs h-5 px-1 sm:h-6 sm:px-2"
                             onClick={() => handleGetTempPassword(user)}
                           >
-                            <Eye className="w-3 h-3 mr-1" />
-                            Temp Pass
+                            <Eye className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
+                            <span className="hidden sm:inline">Temp Pass</span>
+                            <span className="sm:hidden">Temp</span>
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-xs h-6 px-2 bg-red-50 hover:bg-red-100 border-red-300"
+                            className="text-xs h-5 px-1 sm:h-6 sm:px-2 bg-red-50 hover:bg-red-100 border-red-300"
                             onClick={() => handleGetRealPassword(user)}
                           >
-                            <Eye className="w-3 h-3 mr-1" />
-                            Real Pass
+                            <Eye className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
+                            <span className="hidden sm:inline">Real Pass</span>
+                            <span className="sm:hidden">Real</span>
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-xs h-6 px-2 bg-yellow-50 hover:bg-yellow-100 border-yellow-300"
+                            className="text-xs h-5 px-1 sm:h-6 sm:px-2 bg-yellow-50 hover:bg-yellow-100 border-yellow-300"
                             onClick={() => handleResetUserPassword(user)}
                           >
-                            <Shield className="w-3 h-3 mr-1" />
-                            Reset
+                            <Shield className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
+                            <span className="hidden sm:inline">Reset</span>
+                            <span className="sm:hidden">Reset</span>
                           </Button>
                         </div>
                         {user.updatedAt && user.updatedAt !== user.createdAt && (
@@ -427,24 +454,26 @@ export function OwnerDashboard() {
                       </div>
                     </div>
                     
-                    <div className="flex flex-wrap gap-2 sm:flex-col sm:gap-2">
+                    <div className="flex flex-wrap gap-1 sm:gap-2 sm:flex-col">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleEditUser(user)}
-                        className="text-xs"
+                        className="text-xs px-2 py-1 h-7 sm:h-8"
                       >
                         <Settings className="w-3 h-3 mr-1" />
-                        แก้ไข
+                        <span className="hidden sm:inline">แก้ไข</span>
+                        <span className="sm:hidden">แก้</span>
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleShowDetails(user)}
-                        className="text-xs"
+                        className="text-xs px-2 py-1 h-7 sm:h-8"
                       >
                         <Eye className="w-3 h-3 mr-1" />
-                        ดูรายละเอียด
+                        <span className="hidden sm:inline">ดูรายละเอียด</span>
+                        <span className="sm:hidden">ดู</span>
                       </Button>
                       <Button
                         variant="outline"
@@ -453,19 +482,21 @@ export function OwnerDashboard() {
                           setSelectedUser(user);
                           handleResetPassword();
                         }}
-                        className="text-xs"
+                        className="text-xs px-2 py-1 h-7 sm:h-8"
                       >
-                        รีเซ็ตรหัสผ่าน
+                        <span className="hidden sm:inline">รีเซ็ตรหัสผ่าน</span>
+                        <span className="sm:hidden">รีเซ็ต</span>
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
                             variant="destructive"
                             size="sm"
-                            className="text-xs"
+                            className="text-xs px-2 py-1 h-7 sm:h-8"
                           >
                             <UserX className="w-3 h-3 mr-1" />
-                            ลบ
+                            <span className="hidden sm:inline">ลบ</span>
+                            <span className="sm:hidden">ลบ</span>
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>

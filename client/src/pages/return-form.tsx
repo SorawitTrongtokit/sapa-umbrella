@@ -1,62 +1,54 @@
-import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Undo, MapPin, User, Clock, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Undo, MapPin, AlertCircle, Umbrella as UmbrellaIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { returnFormSchema, type ReturnForm, LOCATIONS } from '@shared/schema';
+import { useUserAuth } from '@/hooks/use-user-auth';
 import { useUmbrellaData } from '@/hooks/use-umbrella-data';
 import { updateUmbrella, addActivity } from '@/lib/firebase';
 
 export default function ReturnForm() {
   const { toast } = useToast();
-  const { getBorrowedUmbrellas, umbrellas } = useUmbrellaData();
+  const { user } = useUserAuth();
+  const { getBorrowedUmbrellas } = useUmbrellaData();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedUmbrella, setSelectedUmbrella] = useState<any>(null);
 
-  const form = useForm<ReturnForm>({
-    resolver: zodResolver(returnFormSchema),
-    defaultValues: {
-      umbrellaId: 0
-      // ลบ returnLocation เพราะจะกำหนดอัตโนมัติ
-    }
-  });
+  // เอาเฉพาะร่มที่ผู้ใช้คนนี้ยืมไป
+  const borrowedUmbrellas = user ? getBorrowedUmbrellas(user.uid) : [];
 
-  // Watch for umbrella selection changes
-  const watchedUmbrellaId = form.watch('umbrellaId');
-  
-  useEffect(() => {
-    if (watchedUmbrellaId && umbrellas[watchedUmbrellaId]) {
-      const umbrella = umbrellas[watchedUmbrellaId];
-      setSelectedUmbrella(umbrella);
-      // ไม่ต้องมี setValue เพราะไม่มี returnLocation แล้ว
-    } else {
-      setSelectedUmbrella(null);
-    }
-  }, [watchedUmbrellaId, umbrellas]);
+  const handleUmbrellaSelect = (umbrella: any) => {
+    setSelectedUmbrella(umbrella);
+    setShowConfirmDialog(true);
+  };
 
-  const borrowedUmbrellas = getBorrowedUmbrellas();
-
-  const onSubmit = async (data: ReturnForm) => {
+  const handleConfirmReturn = async () => {
+    if (!selectedUmbrella || !user) return;
+    
     setIsSubmitting(true);
+    setShowConfirmDialog(false);
     
     try {
-      const timestamp = Date.now();
-      // คืนร่มที่ตำแหน่งเดิมเสมอ
-      const returnLocation = selectedUmbrella?.currentLocation;
-      
-      if (!returnLocation || !selectedUmbrella) {
-        throw new Error('ไม่พบข้อมูลร่มที่เลือก');
+      // ตรวจสอบว่าผู้ใช้สามารถคืนร่มนี้ได้หรือไม่
+      if (selectedUmbrella.status !== 'borrowed') {
+        throw new Error('ร่มนี้ไม่ได้ถูกยืม');
       }
       
+      // ตรวจสอบว่าเป็นผู้ยืมหรือไม่
+      if (selectedUmbrella.borrower?.uid !== user.uid) {
+        throw new Error('คุณไม่สามารถคืนร่มนี้ได้ เพราะไม่ได้เป็นผู้ยืม');
+      }
+      
+      const timestamp = Date.now();
+      // คืนร่มที่ตำแหน่งเดิมเสมอ
+      const returnLocation = selectedUmbrella.currentLocation;
+      
       // Update umbrella status
-      await updateUmbrella(data.umbrellaId, {
-        id: data.umbrellaId,
+      await updateUmbrella(selectedUmbrella.id, {
+        id: selectedUmbrella.id,
         status: 'available',
         currentLocation: returnLocation,
         borrower: null,
@@ -66,23 +58,22 @@ export default function ReturnForm() {
       // Add activity log
       await addActivity({
         type: 'return',
-        umbrellaId: data.umbrellaId,
+        umbrellaId: selectedUmbrella.id,
         location: returnLocation,
         timestamp
       });
 
       toast({
         title: "คืนร่มเรียบร้อย! 🎉",
-        description: `ร่ม #${data.umbrellaId} ได้ถูกคืนที่ ${returnLocation} แล้ว`,
+        description: `ร่ม #${selectedUmbrella.id} ได้ถูกคืนที่ ${returnLocation} แล้ว`,
         variant: "default"
       });
 
-      form.reset();
       setSelectedUmbrella(null);
     } catch (error) {
       toast({
         title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถคืนร่มได้ กรุณาลองใหม่อีกครั้ง",
+        description: error instanceof Error ? error.message : "ไม่สามารถคืนร่มได้ กรุณาลองใหม่อีกครั้ง",
         variant: "destructive"
       });
     } finally {
@@ -96,134 +87,110 @@ export default function ReturnForm() {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-md mx-auto px-4 py-4">
           <h1 className="text-xl font-semibold text-gray-900 text-center">คืนร่ม</h1>
-          <p className="text-sm text-gray-600 text-center mt-1">กรุณาคืนร่มที่ตำแหน่งเดิม</p>
+          <p className="text-sm text-gray-600 text-center mt-1">Return Umbrella</p>
         </div>
       </div>
 
       <div className="max-w-md mx-auto px-4 py-6">
         {/* คำแนะนำ */}
         {borrowedUmbrellas.length === 0 && (
-          <Alert className="mb-6 border-orange-200 bg-orange-50">
-            <AlertCircle className="h-4 w-4 text-orange-600" />
-            <AlertDescription className="text-orange-800">
-              ขณะนี้ไม่มีร่มที่กำลังถูกยืม หรือคุณอาจต้องรอให้ข้อมูลอัพเดต
+          <Alert className="mb-6 border-blue-200 bg-blue-50">
+            <AlertCircle className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800">
+              <strong>ไม่มีร่มที่ต้องคืน</strong><br />
+              คุณยังไม่ได้ยืมร่มใด ๆ หรือได้คืนร่มทั้งหมดแล้ว
             </AlertDescription>
           </Alert>
         )}
 
+        {/* รายการร่มที่ยืม */}
         <Card className="bg-white shadow-sm">
           <CardContent className="p-6">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="umbrellaId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-base font-medium">
-                        หมายเลขร่มที่คืน <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <Select onValueChange={(value) => field.onChange(parseInt(value))}>
-                        <FormControl>
-                          <SelectTrigger className="h-14 text-left">
-                            <SelectValue placeholder="เลือกหมายเลขร่มที่คืน" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {borrowedUmbrellas.length > 0 ? (
-                            borrowedUmbrellas.map((umbrella) => (
-                              <SelectItem key={umbrella.id} value={umbrella.id.toString()}>
-                                <div className="flex items-center gap-3">
-                                  <Badge variant="outline" className="text-orange-700 border-orange-300">
-                                    #{umbrella.id}
-                                  </Badge>
-                                  <span>
-                                    {umbrella.borrower && `ยืมโดย: ${umbrella.borrower.nickname}`}
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <SelectItem value="no-umbrellas" disabled>
-                              ไม่มีร่มที่กำลังถูกยืม
-                            </SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* ข้อมูลร่มที่เลือก */}
-                {selectedUmbrella && (
-                  <div className="bg-gradient-to-r from-blue-50 to-green-50 p-5 rounded-xl border border-blue-200">
-                    <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-blue-600" />
-                      ข้อมูลร่มที่เลือก
-                    </h4>
-                    
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
-                        <User className="w-5 h-5 text-gray-600" />
-                        <div>
-                          <p className="text-sm text-gray-600">ยืมโดย</p>
-                          <p className="font-medium text-gray-900">{selectedUmbrella.borrower?.nickname}</p>
+            <h3 className="text-lg font-semibold mb-4 text-center">เลือกร่มที่ต้องการคืน</h3>
+            
+            {borrowedUmbrellas.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">
+                <UmbrellaIcon className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>ไม่มีร่มที่ต้องคืนในขณะนี้</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {borrowedUmbrellas.map((umbrella) => (
+                  <Card 
+                    key={umbrella.id} 
+                    className="border-2 border-gray-200 hover:border-orange-400 cursor-pointer transition-colors"
+                    onClick={() => handleUmbrellaSelect(umbrella)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <UmbrellaIcon className="w-6 h-6 text-orange-600" />
+                          <div>
+                            <div className="font-medium">ร่ม #{umbrella.id}</div>
+                            <div className="text-sm text-gray-600">คืนที่: {umbrella.currentLocation}</div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              ยืมเมื่อ: {new Date(umbrella.borrower?.timestamp).toLocaleString('th-TH', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-sm">
+                          <Badge variant="outline" className="text-orange-700 border-orange-300">
+                            กำลังยืม
+                          </Badge>
                         </div>
                       </div>
-                      
-                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
-                        <Clock className="w-5 h-5 text-gray-600" />
-                        <div>
-                          <p className="text-sm text-gray-600">ยืมเมื่อ</p>
-                          <p className="font-medium text-gray-900">
-                            {new Date(selectedUmbrella.borrower?.timestamp).toLocaleString('th-TH', {
-                              weekday: 'long',
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="p-4 bg-orange-100 rounded-lg border-2 border-orange-300">
-                        <div className="flex items-center gap-2 mb-2">
-                          <MapPin className="w-5 h-5 text-orange-700" />
-                          <p className="font-semibold text-orange-900">ต้องคืนที่</p>
-                        </div>
-                        <p className="text-lg font-bold text-orange-800">
-                          📍 {selectedUmbrella.currentLocation}
-                        </p>
-                        <p className="text-sm text-orange-700 mt-1">
-                          กรุณานำร่มไปคืนที่ตำแหน่งเดิมที่ยืมมา
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <Button 
-                  type="submit" 
-                  className="w-full h-14 bg-green-600 hover:bg-green-700 text-white text-lg font-medium"
-                  disabled={isSubmitting || !selectedUmbrella}
-                >
-                  <Undo className="w-5 h-5 mr-2" />
-                  {isSubmitting ? 'กำลังดำเนินการ...' : 
-                   selectedUmbrella ? `คืนร่ม #${selectedUmbrella.id}` : 'เลือกร่มที่จะคืน'}
-                </Button>
-                
-                {selectedUmbrella && (
-                  <p className="text-center text-sm text-gray-600">
-                    💡 ระบบจะคืนร่มที่ <strong>{selectedUmbrella.currentLocation}</strong> อัตโนมัติ
-                  </p>
-                )}
-              </form>
-            </Form>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* Confirmation Dialog */}
+        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>ยืนยันการคืนร่ม</AlertDialogTitle>
+              <AlertDialogDescription>
+                คุณต้องการคืนร่ม #{selectedUmbrella?.id} ที่ตำแหน่ง <strong>{selectedUmbrella?.currentLocation}</strong> ใช่หรือไม่?
+                <br /><br />
+                <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 mt-3">
+                  <div className="flex items-center gap-2 text-orange-800">
+                    <MapPin className="w-4 h-4" />
+                    <span className="font-medium">กรุณานำร่มไปคืนที่: {selectedUmbrella?.currentLocation}</span>
+                  </div>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleConfirmReturn}
+                disabled={isSubmitting}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Undo className="w-4 h-4 mr-2 animate-spin" />
+                    กำลังคืนร่ม...
+                  </>
+                ) : (
+                  <>
+                    <Undo className="w-4 h-4 mr-2" />
+                    คืนร่ม
+                  </>
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

@@ -70,7 +70,14 @@ function Router() {
         {() => null}
       </Route>
       <Route>
-        {() => <BottomNavigation />}
+        {() => {
+          // Don't show bottom navigation if we're on admin pages
+          const currentPath = window.location.pathname;
+          if (currentPath === '/admin') {
+            return null;
+          }
+          return <BottomNavigation />;
+        }}
       </Route>
     </>
   );

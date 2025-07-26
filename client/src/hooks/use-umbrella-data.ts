@@ -62,8 +62,15 @@ export function useUmbrellaData() {
     return Object.values(umbrellas).filter(u => u.status === 'available');
   };
 
-  const getBorrowedUmbrellas = () => {
-    return Object.values(umbrellas).filter(u => u.status === 'borrowed');
+  const getBorrowedUmbrellas = (userUid?: string) => {
+    const borrowed = Object.values(umbrellas).filter(u => u.status === 'borrowed');
+    
+    // ถ้ามี userUid กรองเฉพาะร่มที่ user นั้นยืม
+    if (userUid) {
+      return borrowed.filter(u => u.borrower?.uid === userUid);
+    }
+    
+    return borrowed;
   };
 
   const getUmbrellasByLocation = (location: string) => {

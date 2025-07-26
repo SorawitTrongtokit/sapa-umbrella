@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LogOut, Umbrella, Check, User, TrendingUp, RotateCcw, Edit, History, MapPin, Calendar, X, BarChart3, RefreshCw, AlertCircle, Clock, Search, Settings, Crown } from 'lucide-react';
+import { LogOut, Umbrella, Check, User, TrendingUp, RotateCcw, Edit, History, MapPin, Calendar, X, BarChart3, RefreshCw, AlertCircle, Clock, Search, Settings, Crown, ArrowLeft, Home } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -289,7 +289,7 @@ export default function AdminDashboard() {
 
   // Check if user wants to view Owner Dashboard
   if (showOwnerDashboard && hasOwnerAccess) {
-    return <OwnerDashboard />;
+    return <OwnerDashboard onBackToAdmin={() => setShowOwnerDashboard(false)} />;
   }
 
   // Security Check: After authentication, verify admin role
@@ -334,11 +334,21 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">{/* ]}}
+    <div className="min-h-screen bg-gray-50">
           {/* Header */}
           <div className="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
             <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-              <h1 className="text-xl font-semibold text-gray-900">Admin Dashboard</h1>
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.location.href = '/'}
+                  className="text-gray-600 hover:text-gray-700"
+                >
+                  <Home className="w-4 h-4 mr-1" />
+                  กลับหน้าหลัก
+                </Button>
+                <h1 className="text-xl font-semibold text-gray-900">Admin Dashboard</h1>
+              </div>
               <div className="flex gap-2">
                 {hasOwnerAccess && (
                   <Button 
