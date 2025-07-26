@@ -66,9 +66,17 @@ export function AdminAnalytics({ activities, umbrellas }: AnalyticsProps) {
   });
   
   Object.values(umbrellas).forEach((umbrella: any) => {
-    const locationIndex = umbrella.currentLocation === 'ใต้โดม' ? 0 : 
-                          umbrella.currentLocation === 'ศูนย์กีฬา' ? 1 : 2;
-    locationStats[locationIndex][umbrella.status]++;
+    const location = umbrella.currentLocation;
+    const status = umbrella.status;
+    
+    if (location in locationStats && (status === 'borrowed' || status === 'available')) {
+      const locationData = locationStats[location as keyof typeof locationStats] as { borrowed: number; available: number };
+      if (status === 'borrowed') {
+        locationData.borrowed++;
+      } else if (status === 'available') {
+        locationData.available++;
+      }
+    }
   });
   
   // ร่มที่ใช้บ่อยที่สุด

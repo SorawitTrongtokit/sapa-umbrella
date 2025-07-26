@@ -15,6 +15,12 @@ server/public
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
+
+# Testing
+coverage/
+.nyc_output
+.eslintcache
 
 # IDE
 .vscode/

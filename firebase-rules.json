@@ -1,5 +1,20 @@
 {
   "rules": {
+    "public_temp_login": {
+      ".read": true,
+      ".write": false,
+      "$email": {
+        "tempPassword": {
+          ".read": true
+        },
+        "tempPasswordExpires": {
+          ".read": true
+        },
+        "uid": {
+          ".read": true
+        }
+      }
+    },
     "users": {
       ".read": "auth != null",
       ".write": "auth != null",
@@ -9,6 +24,25 @@
         "role": {
           ".write": "auth != null && (auth.uid == $uid || root.child('users').child(auth.uid).child('role').val() == 'owner')",
           ".validate": "newData.val() == 'user' || newData.val() == 'admin' || newData.val() == 'owner'"
+        },
+        "encryptedPassword": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'owner'",
+          ".write": "auth != null && (auth.uid == $uid || root.child('users').child(auth.uid).child('role').val() == 'owner')",
+          ".validate": "newData.isString()"
+        },
+        "tempPassword": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'owner'",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'owner'",
+          ".validate": "newData.isString()"
+        },
+        "loginAttempts": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10"
+        },
+        "lastLoginAttempt": {
+          ".validate": "newData.isNumber()"
+        },
+        "isBlocked": {
+          ".validate": "newData.isBoolean()"
         },
         "updatedAt": {
           ".write": "auth != null && (auth.uid == $uid || root.child('users').child(auth.uid).child('role').val() == 'owner')",
@@ -30,6 +64,20 @@
       ".write": "auth != null || (newData.hasChildren(['type', 'umbrellaId', 'location', 'timestamp']) && newData.child('type').val().matches(/^(borrow|return)$/) && newData.child('umbrellaId').val() >= 1 && newData.child('umbrellaId').val() <= 21 && newData.child('location').val().matches(/^(ใต้โดม|ศูนย์กีฬา|โรงอาหาร)$/) && newData.child('timestamp').val() > (now - 300000))",
       "$activityId": {
         ".validate": "newData.hasChildren(['type', 'umbrellaId', 'location', 'timestamp']) && newData.child('type').val().matches(/^(borrow|return|admin_update)$/) && newData.child('umbrellaId').val() >= 1 && newData.child('umbrellaId').val() <= 21 && newData.child('location').val().matches(/^(ใต้โดม|ศูนย์กีฬา|โรงอาหาร)$/) && newData.child('timestamp').val() > 0 && newData.child('timestamp').val() <= now + 60000"
+      }
+    },
+    "analytics": {
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() == 'admin' || root.child('users').child(auth.uid).child('role').val() == 'owner')",
+      ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() == 'admin' || root.child('users').child(auth.uid).child('role').val() == 'owner')"
+    },
+    "system": {
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() == 'admin' || root.child('users').child(auth.uid).child('role').val() == 'owner')",
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'owner'",
+      "maintenanceMode": {
+        ".validate": "newData.isBoolean()"
+      },
+      "maxBorrowTime": {
+        ".validate": "newData.isNumber() && newData.val() > 0"
       }
     }
   }

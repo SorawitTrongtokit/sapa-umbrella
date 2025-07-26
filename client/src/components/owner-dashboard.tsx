@@ -31,6 +31,8 @@ export function OwnerDashboard() {
   const [showRealPassword, setShowRealPassword] = useState(false);
   const [currentRealPassword, setCurrentRealPassword] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
 
   const {
     register: registerEdit,
@@ -184,6 +186,61 @@ export function OwnerDashboard() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleResetUserPassword = async (user: UserProfile) => {
+    setSelectedUser(user);
+    setNewPassword('');
+    setResetPasswordDialogOpen(true);
+  };
+
+  const handleConfirmResetPassword = async () => {
+    if (!selectedUser || !newPassword) return;
+
+    try {
+      // สร้างรหัสผ่านใหม่ด้วย encryption
+      const { encryptPassword } = await import('../lib/encryption');
+      const { updateUserProfile } = await import('../lib/firebase');
+      
+      const encryptedPassword = encryptPassword(newPassword);
+      
+      // อัพเดทรหัสผ่านในฐานข้อมูล
+      await updateUserProfile(selectedUser.uid, {
+        ...selectedUser,
+        encryptedPassword: encryptedPassword,
+        lastPasswordReset: new Date().toISOString(),
+        tempPassword: newPassword // เก็บไว้สำหรับการอ้างอิง
+      });
+
+      toast({
+        title: "รีเซ็ตรหัสผ่านสำเร็จ",
+        description: `รหัสผ่านใหม่สำหรับ ${selectedUser.email}: ${newPassword}`,
+      });
+
+      setResetPasswordDialogOpen(false);
+      setNewPassword('');
+      setSelectedUser(null);
+      
+      // รีเฟรชรายการผู้ใช้
+      loadUsers();
+      
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถรีเซ็ตรหัสผ่านได้",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generateNewPassword = () => {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewPassword(result);
   };
 
   const handleShowDetails = (user: UserProfile) => {
@@ -346,6 +403,15 @@ export function OwnerDashboard() {
                             <Eye className="w-3 h-3 mr-1" />
                             Real Pass
                           </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs h-6 px-2 bg-yellow-50 hover:bg-yellow-100 border-yellow-300"
+                            onClick={() => handleResetUserPassword(user)}
+                          >
+                            <Shield className="w-3 h-3 mr-1" />
+                            Reset
+                          </Button>
                         </div>
                         {user.updatedAt && user.updatedAt !== user.createdAt && (
                           <p className="text-xs text-blue-600">
@@ -383,7 +449,10 @@ export function OwnerDashboard() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleResetPassword(user)}
+                        onClick={() => {
+                          setSelectedUser(user);
+                          handleResetPassword();
+                        }}
                         className="text-xs"
                       >
                         รีเซ็ตรหัสผ่าน
@@ -410,7 +479,7 @@ export function OwnerDashboard() {
                           <AlertDialogFooter>
                             <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => handleDeleteUser(user.uid)}
+                              onClick={() => handleDeleteUser(user)}
                               className="bg-red-600 hover:bg-red-700"
                             >
                               ลบบัญชี
@@ -684,6 +753,9 @@ export function OwnerDashboard() {
                 <Eye className="w-5 h-5" />
                 Temporary Password
               </DialogTitle>
+              <DialogDescription>
+                รหัสผ่านชั่วคราวสำหรับผู้ใช้ {selectedUser?.firstName} {selectedUser?.lastName}
+              </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4">
@@ -773,6 +845,9 @@ export function OwnerDashboard() {
                 <Eye className="w-5 h-5 text-red-600" />
                 Password จริง - ความลับสุดยอด
               </DialogTitle>
+              <DialogDescription>
+                รหัสผ่านจริงของผู้ใช้ {selectedUser?.firstName} {selectedUser?.lastName} (ข้อมูลความลับ)
+              </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4">
@@ -844,6 +919,67 @@ export function OwnerDashboard() {
                   </Button>
                 )}
               </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Reset Password Dialog */}
+        <Dialog open={resetPasswordDialogOpen} onOpenChange={setResetPasswordDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>รีเซ็ตรหัสผ่าน</DialogTitle>
+              <DialogDescription>
+                กำหนดรหัสผ่านใหม่สำหรับ: {selectedUser?.email}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="newPassword" className="text-right">
+                  รหัสผ่านใหม่
+                </Label>
+                <div className="col-span-3 flex gap-2">
+                  <Input
+                    id="newPassword"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="กรอกรหัสผ่านใหม่"
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={generateNewPassword}
+                    className="px-3"
+                  >
+                    สุ่ม
+                  </Button>
+                </div>
+              </div>
+              {newPassword && (
+                <div className="bg-blue-50 p-3 rounded-md">
+                  <p className="text-sm text-blue-700">
+                    <strong>รหัสผ่านใหม่:</strong> {newPassword}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    กรุณาบันทึกรหัสผ่านนี้และแจ้งให้ผู้ใช้ทราบ
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setResetPasswordDialogOpen(false)}
+              >
+                ยกเลิก
+              </Button>
+              <Button
+                onClick={handleConfirmResetPassword}
+                disabled={!newPassword}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                รีเซ็ตรหัสผ่าน
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

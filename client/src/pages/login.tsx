@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useLocation } from 'wouter';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Shield } from 'lucide-react';
 
 import { userLoginSchema, UserLogin } from '../../../shared/schema';
 import { userLogin, resetPassword } from '../lib/firebase';
@@ -11,6 +11,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { useRateLimit } from '../hooks/use-rate-limit';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -19,6 +20,8 @@ export default function LoginPage() {
   const [resetLoading, setResetLoading] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
   const [location, navigate] = useLocation();
+  
+  const { isBlocked, remainingTime, recordAttempt, reset: resetRateLimit } = useRateLimit();
 
   const {
     register,
@@ -32,6 +35,12 @@ export default function LoginPage() {
   const emailValue = watch('email');
 
   const onSubmit = async (data: UserLogin) => {
+    if (isBlocked) {
+      const minutes = Math.ceil(remainingTime / 60000);
+      setError(`ถูกบล็อกเนื่องจากพยายามเข้าสู่ระบบมากเกินไป กรุณารอ ${minutes} นาที`);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -39,12 +48,23 @@ export default function LoginPage() {
       const userCredential = await userLogin(data.email, data.password);
       console.log('Login successful:', userCredential.user.uid);
       
+      // Check if this is a temporary login
+      if ((userCredential.user as any).isTemporaryLogin) {
+        alert('เข้าสู่ระบบด้วย Temporary Password สำเร็จ!\n\nกรุณาเปลี่ยนรหัสผ่านใหม่ในหน้าโปรไฟล์');
+      }
+      
+      // Reset rate limit on successful login
+      resetRateLimit();
+      
       // Wait a moment for auth state to update
       setTimeout(() => {
         navigate('/');
       }, 500);
     } catch (error: any) {
       console.error('Login error:', error);
+      
+      // Record failed attempt
+      recordAttempt();
       
       // Handle Firebase Auth errors
       let errorMessage = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
@@ -111,6 +131,16 @@ export default function LoginPage() {
         
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {isBlocked && (
+              <Alert variant="destructive">
+                <Shield className="h-4 w-4" />
+                <AlertDescription>
+                  ระบบถูกล็อกเนื่องจากมีการพยายามเข้าสู่ระบบมากเกินไป 
+                  <br />กรุณารอ {Math.ceil(remainingTime / 60000)} นาที
+                </AlertDescription>
+              </Alert>
+            )}
+
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
