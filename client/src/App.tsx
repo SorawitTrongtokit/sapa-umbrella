@@ -26,6 +26,7 @@ import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
+import { autoCleanup } from "@/lib/data-cleanup";
 
 function Router() {
   return (
@@ -85,15 +86,24 @@ function Router() {
 
 function App() {
   useEffect(() => {
+    // Auto cleanup for Firebase Free Tier
+    autoCleanup();
+
     // Register Service Worker for PWA (only in production)
     if ('serviceWorker' in navigator && import.meta.env.PROD) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
           .then((registration) => {
-            console.log('SW registered: ', registration);
+            // Service worker registered successfully
+            if (import.meta.env.DEV) {
+              console.log('SW registered: ', registration);
+            }
           })
           .catch((registrationError) => {
-            console.log('SW registration failed: ', registrationError);
+            // Service worker registration failed
+            if (import.meta.env.DEV) {
+              console.log('SW registration failed: ', registrationError);
+            }
           });
       });
     }

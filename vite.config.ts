@@ -26,23 +26,36 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          firebase: ['firebase/app', 'firebase/auth', 'firebase/database'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-toast']
-        }
-      }
-    },
-    target: 'esnext',
+    target: 'es2015',
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true,
-        drop_debugger: true
+        drop_console: true, // Remove console.logs in production
+        drop_debugger: true,
+      },
+    },
+    rollupOptions: {
+      output: {
+        // Optimize chunk sizes for Firebase hosting
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+        manualChunks: {
+          // Core React
+          react: ['react', 'react-dom'],
+          // Firebase services
+          firebase: ['firebase/app', 'firebase/auth', 'firebase/database'],
+          // UI components
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-toast'],
+          // Utilities
+          utils: ['date-fns', 'clsx', 'tailwind-merge'],
+          // Router
+          router: ['wouter'],
+          // Forms
+          forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
+        }
       }
-    }
+    },
   },
   server: {
     fs: {
